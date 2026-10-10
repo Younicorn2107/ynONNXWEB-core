@@ -1,0 +1,79 @@
+{
+  "model_key": "tiny_int4",
+  "compute_type": "int4",
+  "architecture": "whisper",
+  "graphs": [
+    {
+      "filename": "decoder_model_merged_q4.onnx",
+      "role": "decoder_merged",
+      "sha256": null,
+      "size_mb": 0.0,
+      "inputs": [
+        "input_ids",
+        "encoder_hidden_states",
+        "past_key_values.0.decoder.key",
+        "past_key_values.0.decoder.value",
+        "past_key_values.0.encoder.key",
+        "past_key_values.0.encoder.value",
+        "past_key_values.1.decoder.key",
+        "past_key_values.1.decoder.value",
+        "past_key_values.1.encoder.key",
+        "past_key_values.1.encoder.value",
+        "past_key_values.2.decoder.key",
+        "past_key_values.2.decoder.value",
+        "past_key_values.2.encoder.key",
+        "past_key_values.2.encoder.value",
+        "past_key_values.3.decoder.key",
+        "past_key_values.3.decoder.value",
+        "past_key_values.3.encoder.key",
+        "past_key_values.3.encoder.value",
+        "use_cache_branch"
+      ],
+      "outputs": [
+        "logits",
+        "present.0.decoder.key",
+        "present.0.decoder.value",
+        "present.0.encoder.key",
+        "present.0.encoder.value",
+        "present.1.decoder.key",
+        "present.1.decoder.value",
+        "present.1.encoder.key",
+        "present.1.encoder.value",
+        "present.2.decoder.key",
+        "present.2.decoder.value",
+        "present.2.encoder.key",
+        "present.2.encoder.value",
+        "present.3.decoder.key",
+        "present.3.decoder.value",
+        "present.3.encoder.key",
+        "present.3.encoder.value"
+      ],
+      "external_data": []
+    },
+    {
+      "filename": "encoder_model_q4.onnx",
+      "role": "encoder",
+      "sha256": null,
+      "size_mb": 0.0,
+      "inputs": [
+        "input_features"
+      ],
+      "outputs": [
+        "last_hidden_state"
+      ],
+      "external_data": []
+    }
+  ],
+  "tokenizer_file": "tokenizer.json",
+  "logits_vocab_size": 3000,
+  "kv": {
+    "num_layers": 4,
+    "num_heads": 6,
+    "head_dim": 64,
+    "has_cross_attention": true,
+    "dtype": "float32"
+  },
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

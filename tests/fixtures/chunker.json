@@ -1,0 +1,1729 @@
+{
+  "text": "The first paragraph is short.\n\nThe second paragraph is much longer. It has several sentences, some of them with clauses; others are plain. A sentence ends here! Does this one ask a question? Yes.\n\nUn troisième paragraphe, en français, avec des virgules, des points-virgules ; et des deux-points : voilà.\n\nこれは日本語の文です。二つ目の文です！三つ目？\n\nAveryveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a tail.",
+  "cases": [
+    {
+      "max_tokens": 12,
+      "overlap": 2,
+      "tokenized": false,
+      "chunks": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.",
+          "char_start": 0,
+          "char_end": 29,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "The second paragraph is much longer.",
+          "char_start": 31,
+          "char_end": 67,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 7,
+          "context_prefix": [
+            "The first paragraph is short."
+          ]
+        },
+        {
+          "index": 2,
+          "text": "It has several sentences, some of them with clauses;",
+          "char_start": 68,
+          "char_end": 120,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 11,
+          "context_prefix": [
+            "The second paragraph is much longer."
+          ]
+        },
+        {
+          "index": 3,
+          "text": "others are plain. A sentence ends here!",
+          "char_start": 121,
+          "char_end": 160,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 9,
+          "context_prefix": [
+            "It has several sentences, some of them with clauses;"
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Does this one ask a question? Yes.",
+          "char_start": 161,
+          "char_end": 195,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 9,
+          "context_prefix": [
+            "others are plain.",
+            "A sentence ends here!"
+          ]
+        },
+        {
+          "index": 5,
+          "text": "Un troisième paragraphe, en français, avec des virgules,",
+          "char_start": 197,
+          "char_end": 253,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 10,
+          "context_prefix": [
+            "Does this one ask a question?",
+            "Yes."
+          ]
+        },
+        {
+          "index": 6,
+          "text": "des points-virgules ; et des deux-points : voilà.",
+          "char_start": 254,
+          "char_end": 303,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 10,
+          "context_prefix": [
+            "Un troisième paragraphe, en français, avec des virgules,"
+          ]
+        },
+        {
+          "index": 7,
+          "text": "これは日本語の文です。",
+          "char_start": 305,
+          "char_end": 316,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 11,
+          "context_prefix": [
+            "des points-virgules ; et des deux-points : voilà."
+          ]
+        },
+        {
+          "index": 8,
+          "text": "二つ目の文です！三つ目？",
+          "char_start": 316,
+          "char_end": 328,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 12,
+          "context_prefix": [
+            "これは日本語の文です。"
+          ]
+        },
+        {
+          "index": 9,
+          "text": "Averyveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a tail.",
+          "char_start": 330,
+          "char_end": 413,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "二つ目の文です！",
+            "三つ目？"
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short. The second paragraph is much longer. It has several sentences, some of them with clauses; others are plain. A sentence ends here! Does this one ask a question? Yes. Un troisième paragraphe, en",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 0,
+          "token_end": 38,
+          "token_count": 49,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "a question? Yes. Un troisième paragraphe, en français, avec des virgules, des points-virgules ; et des deux-points : voilà. これは日本語の文です。二つ目の文です！三つ目？ Averyveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a tail.",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 31,
+          "token_end": 55,
+          "token_count": 53,
+          "context_prefix": []
+        }
+      ]
+    },
+    {
+      "max_tokens": 40,
+      "overlap": 1,
+      "tokenized": false,
+      "chunks": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.",
+          "char_start": 0,
+          "char_end": 29,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "The second paragraph is much longer. It has several sentences, some of them with clauses; others are plain. A sentence ends here! Does this one ask a question? Yes.",
+          "char_start": 31,
+          "char_end": 195,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 37,
+          "context_prefix": [
+            "The first paragraph is short."
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Un troisième paragraphe, en français, avec des virgules, des points-virgules ; et des deux-points : voilà.",
+          "char_start": 197,
+          "char_end": 303,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 20,
+          "context_prefix": [
+            "Yes."
+          ]
+        },
+        {
+          "index": 3,
+          "text": "これは日本語の文です。二つ目の文です！三つ目？\n\nAveryveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a tail.",
+          "char_start": 305,
+          "char_end": 413,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 29,
+          "context_prefix": [
+            "Un troisième paragraphe, en français, avec des virgules, des points-virgules ; et des deux-points : voilà."
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short. The second paragraph is much longer. It has several sentences, some of them with clauses; others are plain. A sentence ends here! Does this one ask a question? Yes. Un troisième paragraphe, en",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 0,
+          "token_end": 38,
+          "token_count": 49,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "a question? Yes. Un troisième paragraphe, en français, avec des virgules, des points-virgules ; et des deux-points : voilà. これは日本語の文です。二つ目の文です！三つ目？ Averyveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a tail.",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 31,
+          "token_end": 55,
+          "token_count": 53,
+          "context_prefix": []
+        }
+      ]
+    },
+    {
+      "max_tokens": 30,
+      "overlap": 2,
+      "tokenized": true,
+      "chunks": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.",
+          "char_start": 0,
+          "char_end": 29,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 29,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "The second paragraph is much",
+          "char_start": 31,
+          "char_end": 59,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 28,
+          "context_prefix": [
+            "The first paragraph is short."
+          ]
+        },
+        {
+          "index": 2,
+          "text": "longer.",
+          "char_start": 60,
+          "char_end": 67,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 7,
+          "context_prefix": [
+            "The second paragraph is much"
+          ]
+        },
+        {
+          "index": 3,
+          "text": "It has several sentences,",
+          "char_start": 68,
+          "char_end": 93,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 25,
+          "context_prefix": [
+            "longer."
+          ]
+        },
+        {
+          "index": 4,
+          "text": "some of them with clauses;",
+          "char_start": 94,
+          "char_end": 120,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 26,
+          "context_prefix": [
+            "It has several sentences,"
+          ]
+        },
+        {
+          "index": 5,
+          "text": "others are plain.",
+          "char_start": 121,
+          "char_end": 138,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 17,
+          "context_prefix": [
+            "some of them with clauses;"
+          ]
+        },
+        {
+          "index": 6,
+          "text": "A sentence ends here!",
+          "char_start": 139,
+          "char_end": 160,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 21,
+          "context_prefix": [
+            "others are plain."
+          ]
+        },
+        {
+          "index": 7,
+          "text": "Does this one ask a question?",
+          "char_start": 161,
+          "char_end": 190,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 29,
+          "context_prefix": [
+            "A sentence ends here!"
+          ]
+        },
+        {
+          "index": 8,
+          "text": "Yes.\n\nUn troisième paragraphe,",
+          "char_start": 191,
+          "char_end": 221,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 30,
+          "context_prefix": [
+            "Does this one ask a question?"
+          ]
+        },
+        {
+          "index": 9,
+          "text": "en français,",
+          "char_start": 222,
+          "char_end": 234,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 12,
+          "context_prefix": [
+            "Yes.",
+            "Un troisième paragraphe,"
+          ]
+        },
+        {
+          "index": 10,
+          "text": "avec des virgules,",
+          "char_start": 235,
+          "char_end": 253,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 18,
+          "context_prefix": [
+            "en français,"
+          ]
+        },
+        {
+          "index": 11,
+          "text": "des points-virgules ;",
+          "char_start": 254,
+          "char_end": 275,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 21,
+          "context_prefix": [
+            "avec des virgules,"
+          ]
+        },
+        {
+          "index": 12,
+          "text": "et des deux-points : voilà.",
+          "char_start": 276,
+          "char_end": 303,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 27,
+          "context_prefix": [
+            "des points-virgules ;"
+          ]
+        },
+        {
+          "index": 13,
+          "text": "これは日本語の文です。二つ目の文です！三つ目？",
+          "char_start": 305,
+          "char_end": 328,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 23,
+          "context_prefix": [
+            "et des deux-points : voilà."
+          ]
+        },
+        {
+          "index": 14,
+          "text": "Averyveryverylongwordthatcanno",
+          "char_start": 330,
+          "char_end": 360,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 30,
+          "context_prefix": [
+            "二つ目の文です！",
+            "三つ目？"
+          ]
+        },
+        {
+          "index": 15,
+          "text": "tbesplitonwhitespaceatallbecau",
+          "char_start": 360,
+          "char_end": 390,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 30,
+          "context_prefix": [
+            "Averyveryverylongwordthatcanno"
+          ]
+        },
+        {
+          "index": 16,
+          "text": "seithasnone and a tail.",
+          "char_start": 390,
+          "char_end": 413,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 23,
+          "context_prefix": [
+            "tbesplitonwhitespaceatallbecau"
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.\n\nThe second paragrap",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 0,
+          "token_end": 50,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "d paragraph is much longer. It has several sentenc",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 40,
+          "token_end": 90,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 2,
+          "text": "al sentences, some of them with clauses; others ar",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 80,
+          "token_end": 130,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 3,
+          "text": "others are plain. A sentence ends here! Does this",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 120,
+          "token_end": 170,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 4,
+          "text": "Does this one ask a question? Yes.\n\nUn troisième",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 160,
+          "token_end": 210,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 5,
+          "text": "troisième paragraphe, en français, avec des virgul",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 200,
+          "token_end": 250,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 6,
+          "text": "des virgules, des points-virgules ; et des deux-po",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 240,
+          "token_end": 290,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 7,
+          "text": "es deux-points : voilà.\n\nこれは日本語の文です。二つ目の文です！三つ目？",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 280,
+          "token_end": 330,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 8,
+          "text": "文です！三つ目？\n\nAveryveryverylongwordthatcannotbespliton",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 320,
+          "token_end": 370,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 9,
+          "text": "tbesplitonwhitespaceatallbecauseithasnone and a ta",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 360,
+          "token_end": 410,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 10,
+          "text": "e and a tail.",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 400,
+          "token_end": 413,
+          "token_count": 13,
+          "context_prefix": []
+        }
+      ]
+    },
+    {
+      "max_tokens": 80,
+      "overlap": 0,
+      "tokenized": true,
+      "chunks": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.\n\nThe second paragraph is much longer.",
+          "char_start": 0,
+          "char_end": 67,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 67,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "It has several sentences, some of them with clauses; others are plain.",
+          "char_start": 68,
+          "char_end": 138,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 70,
+          "context_prefix": []
+        },
+        {
+          "index": 2,
+          "text": "A sentence ends here! Does this one ask a question? Yes.",
+          "char_start": 139,
+          "char_end": 195,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 56,
+          "context_prefix": []
+        },
+        {
+          "index": 3,
+          "text": "Un troisième paragraphe, en français, avec des virgules, des points-virgules ;",
+          "char_start": 197,
+          "char_end": 275,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 78,
+          "context_prefix": []
+        },
+        {
+          "index": 4,
+          "text": "et des deux-points : voilà.\n\nこれは日本語の文です。二つ目の文です！三つ目？",
+          "char_start": 276,
+          "char_end": 328,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 52,
+          "context_prefix": []
+        },
+        {
+          "index": 5,
+          "text": "Averyveryverylongwordthatcannotbesplitonwhitespaceatallbecauseithasnone and a",
+          "char_start": 330,
+          "char_end": 407,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 77,
+          "context_prefix": []
+        },
+        {
+          "index": 6,
+          "text": "tail.",
+          "char_start": 408,
+          "char_end": 413,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": []
+        }
+      ],
+      "windows": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.\n\nThe second paragrap",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 0,
+          "token_end": 50,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "d paragraph is much longer. It has several sentenc",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 40,
+          "token_end": 90,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 2,
+          "text": "al sentences, some of them with clauses; others ar",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 80,
+          "token_end": 130,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 3,
+          "text": "others are plain. A sentence ends here! Does this",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 120,
+          "token_end": 170,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 4,
+          "text": "Does this one ask a question? Yes.\n\nUn troisième",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 160,
+          "token_end": 210,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 5,
+          "text": "troisième paragraphe, en français, avec des virgul",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 200,
+          "token_end": 250,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 6,
+          "text": "des virgules, des points-virgules ; et des deux-po",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 240,
+          "token_end": 290,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 7,
+          "text": "es deux-points : voilà.\n\nこれは日本語の文です。二つ目の文です！三つ目？",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 280,
+          "token_end": 330,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 8,
+          "text": "文です！三つ目？\n\nAveryveryverylongwordthatcannotbespliton",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 320,
+          "token_end": 370,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 9,
+          "text": "tbesplitonwhitespaceatallbecauseithasnone and a ta",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 360,
+          "token_end": 410,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 10,
+          "text": "e and a tail.",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 400,
+          "token_end": 413,
+          "token_count": 13,
+          "context_prefix": []
+        }
+      ]
+    },
+    {
+      "max_tokens": 6,
+      "overlap": 1,
+      "tokenized": true,
+      "chunks": [
+        {
+          "index": 0,
+          "text": "The",
+          "char_start": 0,
+          "char_end": 3,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "first",
+          "char_start": 4,
+          "char_end": 9,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "The"
+          ]
+        },
+        {
+          "index": 2,
+          "text": "paragr",
+          "char_start": 10,
+          "char_end": 16,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "first"
+          ]
+        },
+        {
+          "index": 3,
+          "text": "aph is",
+          "char_start": 16,
+          "char_end": 22,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "paragr"
+          ]
+        },
+        {
+          "index": 4,
+          "text": "short.",
+          "char_start": 23,
+          "char_end": 29,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "aph is"
+          ]
+        },
+        {
+          "index": 5,
+          "text": "The",
+          "char_start": 31,
+          "char_end": 34,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": [
+            "short."
+          ]
+        },
+        {
+          "index": 6,
+          "text": "second",
+          "char_start": 35,
+          "char_end": 41,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "The"
+          ]
+        },
+        {
+          "index": 7,
+          "text": "paragr",
+          "char_start": 42,
+          "char_end": 48,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "second"
+          ]
+        },
+        {
+          "index": 8,
+          "text": "aph is",
+          "char_start": 48,
+          "char_end": 54,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "paragr"
+          ]
+        },
+        {
+          "index": 9,
+          "text": "much l",
+          "char_start": 55,
+          "char_end": 61,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "aph is"
+          ]
+        },
+        {
+          "index": 10,
+          "text": "onger.",
+          "char_start": 61,
+          "char_end": 67,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "much l"
+          ]
+        },
+        {
+          "index": 11,
+          "text": "It has",
+          "char_start": 68,
+          "char_end": 74,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "onger."
+          ]
+        },
+        {
+          "index": 12,
+          "text": "severa",
+          "char_start": 75,
+          "char_end": 81,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "It has"
+          ]
+        },
+        {
+          "index": 13,
+          "text": "l sent",
+          "char_start": 81,
+          "char_end": 87,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "severa"
+          ]
+        },
+        {
+          "index": 14,
+          "text": "ences,",
+          "char_start": 87,
+          "char_end": 93,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "l sent"
+          ]
+        },
+        {
+          "index": 15,
+          "text": "some",
+          "char_start": 94,
+          "char_end": 98,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "ences,"
+          ]
+        },
+        {
+          "index": 16,
+          "text": "of",
+          "char_start": 99,
+          "char_end": 101,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 2,
+          "context_prefix": [
+            "some"
+          ]
+        },
+        {
+          "index": 17,
+          "text": "them",
+          "char_start": 102,
+          "char_end": 106,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "of"
+          ]
+        },
+        {
+          "index": 18,
+          "text": "with c",
+          "char_start": 107,
+          "char_end": 113,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "them"
+          ]
+        },
+        {
+          "index": 19,
+          "text": "lauses",
+          "char_start": 113,
+          "char_end": 119,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "with c"
+          ]
+        },
+        {
+          "index": 20,
+          "text": ";",
+          "char_start": 119,
+          "char_end": 120,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 1,
+          "context_prefix": [
+            "lauses"
+          ]
+        },
+        {
+          "index": 21,
+          "text": "others",
+          "char_start": 121,
+          "char_end": 127,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            ";"
+          ]
+        },
+        {
+          "index": 22,
+          "text": "are",
+          "char_start": 128,
+          "char_end": 131,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": [
+            "others"
+          ]
+        },
+        {
+          "index": 23,
+          "text": "plain.",
+          "char_start": 132,
+          "char_end": 138,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "are"
+          ]
+        },
+        {
+          "index": 24,
+          "text": "A sent",
+          "char_start": 139,
+          "char_end": 145,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "plain."
+          ]
+        },
+        {
+          "index": 25,
+          "text": "ence",
+          "char_start": 145,
+          "char_end": 149,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "A sent"
+          ]
+        },
+        {
+          "index": 26,
+          "text": "ends",
+          "char_start": 150,
+          "char_end": 154,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "ence"
+          ]
+        },
+        {
+          "index": 27,
+          "text": "here!",
+          "char_start": 155,
+          "char_end": 160,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "ends"
+          ]
+        },
+        {
+          "index": 28,
+          "text": "Does",
+          "char_start": 161,
+          "char_end": 165,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "here!"
+          ]
+        },
+        {
+          "index": 29,
+          "text": "this",
+          "char_start": 166,
+          "char_end": 170,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "Does"
+          ]
+        },
+        {
+          "index": 30,
+          "text": "one",
+          "char_start": 171,
+          "char_end": 174,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": [
+            "this"
+          ]
+        },
+        {
+          "index": 31,
+          "text": "ask a",
+          "char_start": 175,
+          "char_end": 180,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "one"
+          ]
+        },
+        {
+          "index": 32,
+          "text": "questi",
+          "char_start": 181,
+          "char_end": 187,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "ask a"
+          ]
+        },
+        {
+          "index": 33,
+          "text": "on?",
+          "char_start": 187,
+          "char_end": 190,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": [
+            "questi"
+          ]
+        },
+        {
+          "index": 34,
+          "text": "Yes.",
+          "char_start": 191,
+          "char_end": 195,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "on?"
+          ]
+        },
+        {
+          "index": 35,
+          "text": "Un tro",
+          "char_start": 197,
+          "char_end": 203,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "Yes."
+          ]
+        },
+        {
+          "index": 36,
+          "text": "isième",
+          "char_start": 203,
+          "char_end": 209,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "Un tro"
+          ]
+        },
+        {
+          "index": 37,
+          "text": "paragr",
+          "char_start": 210,
+          "char_end": 216,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "isième"
+          ]
+        },
+        {
+          "index": 38,
+          "text": "aphe,",
+          "char_start": 216,
+          "char_end": 221,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "paragr"
+          ]
+        },
+        {
+          "index": 39,
+          "text": "en fra",
+          "char_start": 222,
+          "char_end": 228,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "aphe,"
+          ]
+        },
+        {
+          "index": 40,
+          "text": "nçais,",
+          "char_start": 228,
+          "char_end": 234,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "en fra"
+          ]
+        },
+        {
+          "index": 41,
+          "text": "avec",
+          "char_start": 235,
+          "char_end": 239,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 4,
+          "context_prefix": [
+            "nçais,"
+          ]
+        },
+        {
+          "index": 42,
+          "text": "des vi",
+          "char_start": 240,
+          "char_end": 246,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "avec"
+          ]
+        },
+        {
+          "index": 43,
+          "text": "rgules",
+          "char_start": 246,
+          "char_end": 252,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "des vi"
+          ]
+        },
+        {
+          "index": 44,
+          "text": ",",
+          "char_start": 252,
+          "char_end": 253,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 1,
+          "context_prefix": [
+            "rgules"
+          ]
+        },
+        {
+          "index": 45,
+          "text": "des po",
+          "char_start": 254,
+          "char_end": 260,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            ","
+          ]
+        },
+        {
+          "index": 46,
+          "text": "ints-v",
+          "char_start": 260,
+          "char_end": 266,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "des po"
+          ]
+        },
+        {
+          "index": 47,
+          "text": "irgule",
+          "char_start": 266,
+          "char_end": 272,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "ints-v"
+          ]
+        },
+        {
+          "index": 48,
+          "text": "s ;",
+          "char_start": 272,
+          "char_end": 275,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 3,
+          "context_prefix": [
+            "irgule"
+          ]
+        },
+        {
+          "index": 49,
+          "text": "et des",
+          "char_start": 276,
+          "char_end": 282,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "s ;"
+          ]
+        },
+        {
+          "index": 50,
+          "text": "deux-p",
+          "char_start": 283,
+          "char_end": 289,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "et des"
+          ]
+        },
+        {
+          "index": 51,
+          "text": "oints",
+          "char_start": 289,
+          "char_end": 294,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "deux-p"
+          ]
+        },
+        {
+          "index": 52,
+          "text": ":",
+          "char_start": 295,
+          "char_end": 296,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 1,
+          "context_prefix": [
+            "oints"
+          ]
+        },
+        {
+          "index": 53,
+          "text": "voilà.",
+          "char_start": 297,
+          "char_end": 303,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            ":"
+          ]
+        },
+        {
+          "index": 54,
+          "text": "これは日本語",
+          "char_start": 305,
+          "char_end": 311,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "voilà."
+          ]
+        },
+        {
+          "index": 55,
+          "text": "の文です。",
+          "char_start": 311,
+          "char_end": 316,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "これは日本語"
+          ]
+        },
+        {
+          "index": 56,
+          "text": "二つ目の文で",
+          "char_start": 316,
+          "char_end": 322,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "の文です。"
+          ]
+        },
+        {
+          "index": 57,
+          "text": "す！三つ目？",
+          "char_start": 322,
+          "char_end": 328,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "二つ目の文で"
+          ]
+        },
+        {
+          "index": 58,
+          "text": "Averyv",
+          "char_start": 330,
+          "char_end": 336,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "三つ目？"
+          ]
+        },
+        {
+          "index": 59,
+          "text": "eryver",
+          "char_start": 336,
+          "char_end": 342,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "Averyv"
+          ]
+        },
+        {
+          "index": 60,
+          "text": "ylongw",
+          "char_start": 342,
+          "char_end": 348,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "eryver"
+          ]
+        },
+        {
+          "index": 61,
+          "text": "ordtha",
+          "char_start": 348,
+          "char_end": 354,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "ylongw"
+          ]
+        },
+        {
+          "index": 62,
+          "text": "tcanno",
+          "char_start": 354,
+          "char_end": 360,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "ordtha"
+          ]
+        },
+        {
+          "index": 63,
+          "text": "tbespl",
+          "char_start": 360,
+          "char_end": 366,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "tcanno"
+          ]
+        },
+        {
+          "index": 64,
+          "text": "itonwh",
+          "char_start": 366,
+          "char_end": 372,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "tbespl"
+          ]
+        },
+        {
+          "index": 65,
+          "text": "itespa",
+          "char_start": 372,
+          "char_end": 378,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "itonwh"
+          ]
+        },
+        {
+          "index": 66,
+          "text": "ceatal",
+          "char_start": 378,
+          "char_end": 384,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "itespa"
+          ]
+        },
+        {
+          "index": 67,
+          "text": "lbecau",
+          "char_start": 384,
+          "char_end": 390,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "ceatal"
+          ]
+        },
+        {
+          "index": 68,
+          "text": "seitha",
+          "char_start": 390,
+          "char_end": 396,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 6,
+          "context_prefix": [
+            "lbecau"
+          ]
+        },
+        {
+          "index": 69,
+          "text": "snone",
+          "char_start": 396,
+          "char_end": 401,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "seitha"
+          ]
+        },
+        {
+          "index": 70,
+          "text": "and a",
+          "char_start": 402,
+          "char_end": 407,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "snone"
+          ]
+        },
+        {
+          "index": 71,
+          "text": "tail.",
+          "char_start": 408,
+          "char_end": 413,
+          "token_start": 0,
+          "token_end": 0,
+          "token_count": 5,
+          "context_prefix": [
+            "and a"
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "index": 0,
+          "text": "The first paragraph is short.\n\nThe second paragrap",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 0,
+          "token_end": 50,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 1,
+          "text": "d paragraph is much longer. It has several sentenc",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 40,
+          "token_end": 90,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 2,
+          "text": "al sentences, some of them with clauses; others ar",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 80,
+          "token_end": 130,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 3,
+          "text": "others are plain. A sentence ends here! Does this",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 120,
+          "token_end": 170,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 4,
+          "text": "Does this one ask a question? Yes.\n\nUn troisième",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 160,
+          "token_end": 210,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 5,
+          "text": "troisième paragraphe, en français, avec des virgul",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 200,
+          "token_end": 250,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 6,
+          "text": "des virgules, des points-virgules ; et des deux-po",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 240,
+          "token_end": 290,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 7,
+          "text": "es deux-points : voilà.\n\nこれは日本語の文です。二つ目の文です！三つ目？",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 280,
+          "token_end": 330,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 8,
+          "text": "文です！三つ目？\n\nAveryveryverylongwordthatcannotbespliton",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 320,
+          "token_end": 370,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 9,
+          "text": "tbesplitonwhitespaceatallbecauseithasnone and a ta",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 360,
+          "token_end": 410,
+          "token_count": 50,
+          "context_prefix": []
+        },
+        {
+          "index": 10,
+          "text": "e and a tail.",
+          "char_start": 0,
+          "char_end": 0,
+          "token_start": 400,
+          "token_end": 413,
+          "token_count": 13,
+          "context_prefix": []
+        }
+      ]
+    }
+  ],
+  "heuristic": [
+    2,
+    3,
+    9,
+    0
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "root": "YnError",
+  "shared": [
+    {
+      "name": "AllocationError",
+      "parent": "YnError"
+    },
+    {
+      "name": "AudioLoadError",
+      "parent": "YnError"
+    },
+    {
+      "name": "CacheError",
+      "parent": "YnError"
+    },
+    {
+      "name": "CalibrationError",
+      "parent": "YnError"
+    },
+    {
+      "name": "CheckpointError",
+      "parent": "YnError"
+    },
+    {
+      "name": "ConfigurationError",
+      "parent": "YnError"
+    },
+    {
+      "name": "ConversionError",
+      "parent": "YnError"
+    },
+    {
+      "name": "DimensionMismatchError",
+      "parent": "ConfigurationError"
+    },
+    {
+      "name": "DocumentTooLongError",
+      "parent": "ConfigurationError"
+    },
+    {
+      "name": "DownloadError",
+      "parent": "YnError"
+    },
+    {
+      "name": "EmptyCandidateSetError",
+      "parent": "ConfigurationError"
+    },
+    {
+      "name": "ExportError",
+      "parent": "YnError"
+    },
+    {
+      "name": "InferenceError",
+      "parent": "YnError"
+    },
+    {
+      "name": "LanguageMismatchError",
+      "parent": "YnError"
+    },
+    {
+      "name": "MissingDependencyError",
+      "parent": "YnError"
+    },
+    {
+      "name": "MissingHeadError",
+      "parent": "YnError"
+    },
+    {
+      "name": "ModelNotFoundError",
+      "parent": "YnError"
+    },
+    {
+      "name": "PoolingError",
+      "parent": "ConfigurationError"
+    },
+    {
+      "name": "SourceError",
+      "parent": "YnError"
+    },
+    {
+      "name": "TaskError",
+      "parent": "YnError"
+    },
+    {
+      "name": "TextTooLongError",
+      "parent": "ConfigurationError"
+    },
+    {
+      "name": "TokenizerError",
+      "parent": "YnError"
+    },
+    {
+      "name": "UploadTooLargeError",
+      "parent": "SourceError"
+    },
+    {
+      "name": "VADError",
+      "parent": "YnError"
+    },
+    {
+      "name": "VRAMError",
+      "parent": "YnError"
+    }
+  ],
+  "onnx_root": "YnONNXError",
+  "onnx": [
+    {
+      "name": "CalibrationError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "GenerationError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "ManifestError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "ProviderError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "QualityError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "QuantizationError",
+      "parent": "YnONNXError"
+    },
+    {
+      "name": "SessionError",
+      "parent": "YnONNXError"
+    }
+  ]
+}

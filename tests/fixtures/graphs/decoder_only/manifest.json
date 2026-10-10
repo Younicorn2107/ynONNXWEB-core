@@ -1,0 +1,43 @@
+{
+  "model_key": "tiny-llm_int4_float16",
+  "compute_type": "int4_float16",
+  "architecture": "qwen3",
+  "graphs": [
+    {
+      "filename": "model_q4f16.onnx",
+      "role": "decoder_with_past",
+      "sha256": null,
+      "size_mb": 0.02,
+      "inputs": [
+        "input_ids",
+        "attention_mask",
+        "past_key_values.0.key",
+        "past_key_values.0.value",
+        "past_key_values.1.key",
+        "past_key_values.1.value"
+      ],
+      "outputs": [
+        "logits",
+        "present.0.key",
+        "present.0.value",
+        "present.1.key",
+        "present.1.value"
+      ],
+      "external_data": [
+        "model_q4f16.onnx_data"
+      ]
+    }
+  ],
+  "tokenizer_file": "tokenizer.json",
+  "logits_vocab_size": 1000,
+  "kv": {
+    "num_layers": 2,
+    "num_heads": 4,
+    "head_dim": 16,
+    "has_cross_attention": false,
+    "dtype": "float16"
+  },
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

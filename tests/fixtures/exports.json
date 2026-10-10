@@ -1,0 +1,108 @@
+{
+  "result": {
+    "text": "Bonjour à tous. Tom & Jerry <3",
+    "language": "fr",
+    "model_name": "small",
+    "duration": 12.5,
+    "vad_applied": true,
+    "segments": [
+      {
+        "id": 0,
+        "start": 0.25,
+        "end": 3.125,
+        "text": " Bonjour à tous.",
+        "speaker": null,
+        "avg_logprob": -0.25
+      },
+      {
+        "id": 1,
+        "start": 3.5,
+        "end": 7.75,
+        "text": "Tom & Jerry <3",
+        "speaker": "SPEAKER_01",
+        "avg_logprob": -0.5
+      },
+      {
+        "id": 2,
+        "start": 7.75,
+        "end": 9.5,
+        "text": "  ",
+        "speaker": null,
+        "avg_logprob": -1.5
+      },
+      {
+        "id": 3,
+        "start": 3723.5,
+        "end": 3725.0625,
+        "text": "Il a dit \"oui\", puis, non",
+        "speaker": null,
+        "avg_logprob": -0.75
+      }
+    ]
+  },
+  "records": [
+    {
+      "name": "a|b",
+      "score": 0.5,
+      "tags": [
+        "x",
+        "y"
+      ]
+    },
+    {
+      "name": "c",
+      "extra": true
+    }
+  ],
+  "json": {
+    "text": "Bonjour à tous. Tom & Jerry <3",
+    "language": "fr",
+    "model_name": "small",
+    "duration": 12.5,
+    "vad_applied": true,
+    "segments": [
+      {
+        "id": 0,
+        "start": 0.25,
+        "end": 3.125,
+        "text": " Bonjour à tous.",
+        "speaker": null,
+        "avg_logprob": -0.25
+      },
+      {
+        "id": 1,
+        "start": 3.5,
+        "end": 7.75,
+        "text": "Tom & Jerry <3",
+        "speaker": "SPEAKER_01",
+        "avg_logprob": -0.5
+      },
+      {
+        "id": 2,
+        "start": 7.75,
+        "end": 9.5,
+        "text": "  ",
+        "speaker": null,
+        "avg_logprob": -1.5
+      },
+      {
+        "id": 3,
+        "start": 3723.5,
+        "end": 3725.0625,
+        "text": "Il a dit \"oui\", puis, non",
+        "speaker": null,
+        "avg_logprob": -0.75
+      }
+    ]
+  },
+  "txt": "Bonjour à tous. Tom & Jerry <3\r\n",
+  "csv_segments": "id,start,end,text,speaker,avg_logprob\r\n0,0.25,3.125, Bonjour à tous.,,-0.25\r\n1,3.5,7.75,Tom & Jerry <3,SPEAKER_01,-0.5\r\n2,7.75,9.5,  ,,-1.5\r\n3,3723.5,3725.0625,\"Il a dit \"\"oui\"\", puis, non\",,-0.75\r\n",
+  "csv_records": "name,score,tags,extra\r\na|b,0.5,\"[\"\"x\"\",\"\"y\"\"]\",\r\nc,,,True\r\n",
+  "xml": "<?xml version='1.0' encoding='utf-8'?>\r\n<result>\r\n  <text>Bonjour à tous. Tom &amp; Jerry &lt;3</text>\r\n  <language>fr</language>\r\n  <model_name>small</model_name>\r\n  <duration>12.5</duration>\r\n  <vad_applied>True</vad_applied>\r\n  <segments>\r\n    <item>\r\n      <id>0</id>\r\n      <start>0.25</start>\r\n      <end>3.125</end>\r\n      <text> Bonjour à tous.</text>\r\n      <speaker />\r\n      <avg_logprob>-0.25</avg_logprob>\r\n    </item>\r\n    <item>\r\n      <id>1</id>\r\n      <start>3.5</start>\r\n      <end>7.75</end>\r\n      <text>Tom &amp; Jerry &lt;3</text>\r\n      <speaker>SPEAKER_01</speaker>\r\n      <avg_logprob>-0.5</avg_logprob>\r\n    </item>\r\n    <item>\r\n      <id>2</id>\r\n      <start>7.75</start>\r\n      <end>9.5</end>\r\n      <text>  </text>\r\n      <speaker />\r\n      <avg_logprob>-1.5</avg_logprob>\r\n    </item>\r\n    <item>\r\n      <id>3</id>\r\n      <start>3723.5</start>\r\n      <end>3725.0625</end>\r\n      <text>Il a dit \"oui\", puis, non</text>\r\n      <speaker />\r\n      <avg_logprob>-0.75</avg_logprob>\r\n    </item>\r\n  </segments>\r\n</result>",
+  "md": "---\r\nmodel_name: small\r\nlanguage: fr\r\n---\r\n\r\n# Transcript\r\n\r\n`00:00:00` Bonjour à tous.\r\n\r\n`00:00:03` **SPEAKER_01** Tom & Jerry <3\r\n\r\n`01:02:03` Il a dit \"oui\", puis, non\r\n",
+  "md_records": "| name | score | tags | extra |\r\n| --- | --- | --- | --- |\r\n| a\\|b | 0.5 | [\"x\",\"y\"] |  |\r\n| c |  |  | True |",
+  "md_text": "Just text.\r\n",
+  "srt": "1\r\n00:00:00,250 --> 00:00:03,125\r\nBonjour à tous.\r\n\r\n2\r\n00:00:03,500 --> 00:00:07,750\r\n[SPEAKER_01] Tom & Jerry <3\r\n\r\n3\r\n01:02:03,500 --> 01:02:05,062\r\nIl a dit \"oui\", puis, non\r\n",
+  "vtt": "WEBVTT\r\n\r\n00:00:00.250 --> 00:00:03.125\r\nBonjour à tous.\r\n\r\n00:00:03.500 --> 00:00:07.750\r\n<v SPEAKER_01>Tom & Jerry <3\r\n\r\n01:02:03.500 --> 01:02:05.062\r\nIl a dit \"oui\", puis, non\r\n",
+  "srt_plain": "1\r\n00:00:00,000 --> 00:00:05,000\r\nNo segments here.\r\n"
+}

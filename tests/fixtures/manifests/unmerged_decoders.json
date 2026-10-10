@@ -1,0 +1,60 @@
+{
+  "model_key": "large-v3_int8",
+  "compute_type": "int8",
+  "architecture": "whisper",
+  "graphs": [
+    {
+      "filename": "encoder_model.onnx",
+      "role": "encoder",
+      "sha256": null,
+      "size_mb": 1180.0,
+      "inputs": [
+        "input_features"
+      ],
+      "outputs": [
+        "last_hidden_state"
+      ],
+      "external_data": [
+        "encoder_model.onnx_data"
+      ]
+    },
+    {
+      "filename": "decoder_model.onnx",
+      "role": "decoder",
+      "sha256": null,
+      "size_mb": 900.0,
+      "inputs": [
+        "input_ids",
+        "encoder_hidden_states"
+      ],
+      "outputs": [
+        "logits",
+        "present.0.decoder.key",
+        "present.0.encoder.key"
+      ],
+      "external_data": []
+    },
+    {
+      "filename": "decoder_with_past_model.onnx",
+      "role": "decoder_with_past",
+      "sha256": null,
+      "size_mb": 880.0,
+      "inputs": [
+        "input_ids",
+        "past_key_values.0.decoder.key",
+        "past_key_values.0.encoder.key"
+      ],
+      "outputs": [
+        "logits",
+        "present.0.decoder.key"
+      ],
+      "external_data": []
+    }
+  ],
+  "tokenizer_file": "tokenizer.json",
+  "logits_vocab_size": 51866,
+  "kv": null,
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

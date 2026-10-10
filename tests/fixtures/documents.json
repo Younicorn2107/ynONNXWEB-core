@@ -1,0 +1,107 @@
+{
+  "front": [
+    {
+      "text": "---\ntitle: \"Hello\"\nauthor: 'Me'\ntags:\n  - a\n---\nBody\n",
+      "body": "Body\n",
+      "metadata": {
+        "title": "Hello",
+        "author": "Me"
+      }
+    },
+    {
+      "text": "---\r\nlang: fr\r\n---\r\nCorps",
+      "body": "Corps",
+      "metadata": {
+        "lang": "fr"
+      }
+    },
+    {
+      "text": "No front matter\n---\nx: y\n---\n",
+      "body": "No front matter\n---\nx: y\n---\n",
+      "metadata": {}
+    },
+    {
+      "text": "",
+      "body": "",
+      "metadata": {}
+    }
+  ],
+  "cues": [
+    {
+      "content": "1\n00:00:01,000 --> 00:00:02,000\nHello there\nsecond line\n\n2\n00:00:03,000 --> 00:00:04,000\nBye\n",
+      "texts": [
+        "Hello there\nsecond line",
+        "Bye"
+      ],
+      "text": "1\n00:00:01,000 --> 00:00:02,000\nHello there\nsecond line\nextra\n\n2\n00:00:03,000 --> 00:00:04,000\nBYE\n",
+      "count": 2
+    },
+    {
+      "content": "WEBVTT\r\n\r\n00:01.000 --> 00:02.000 align:start\r\nUn\r\n\r\nNOTE comment\r\n\r\n00:03.000 --> 00:04.000\r\nDeux\r\ntrois\r\n",
+      "texts": [
+        "Un",
+        "Deux\ntrois"
+      ],
+      "text": "WEBVTT\r\n\r\n00:01.000 --> 00:02.000 align:start\r\nUn\r\nextra\r\n\r\nNOTE comment\r\n\r\n00:03.000 --> 00:04.000\r\nDEUX / TROIS\r\n",
+      "count": 2
+    },
+    {
+      "content": "1\n00:00:01,000 --> 00:00:02,000\n\n\n",
+      "texts": [],
+      "text": "1\n00:00:01,000 --> 00:00:02,000\n\n\n",
+      "count": 0
+    },
+    {
+      "content": "no cues at all",
+      "texts": [],
+      "text": "no cues at all",
+      "count": 0
+    }
+  ],
+  "lines": [
+    {
+      "text": "a\r\nb\nc\rd\u000be f\n",
+      "lines": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "keep": [
+        "a\r\n",
+        "b\n",
+        "c\r",
+        "d\u000b",
+        "e ",
+        "f\n"
+      ]
+    },
+    {
+      "text": "",
+      "lines": [],
+      "keep": []
+    },
+    {
+      "text": "x",
+      "lines": [
+        "x"
+      ],
+      "keep": [
+        "x"
+      ]
+    },
+    {
+      "text": "\n\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "keep": [
+        "\n",
+        "\n"
+      ]
+    }
+  ]
+}

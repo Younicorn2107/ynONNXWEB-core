@@ -1,0 +1,250 @@
+{
+  "pieces": [
+    {
+      "text": "Le chat dort sur le canapé.",
+      "pieces": [
+        "▁Le",
+        "▁chat",
+        "▁d",
+        "or",
+        "t",
+        "▁sur",
+        "▁le",
+        "▁canapé",
+        "."
+      ],
+      "ids": [
+        37,
+        8912,
+        14,
+        647,
+        139,
+        25,
+        13,
+        11664,
+        6
+      ]
+    },
+    {
+      "text": "J'utilise Python 3.12 depuis l'année dernière, c'est très pratique !",
+      "pieces": [
+        "▁J",
+        "'",
+        "utilise",
+        "▁P",
+        "y",
+        "th",
+        "on",
+        "▁3",
+        ".12",
+        "▁depuis",
+        "▁l",
+        "'",
+        "année",
+        "▁dernière",
+        ",",
+        "▁c",
+        "'",
+        "est",
+        "▁très",
+        "▁pratique",
+        "▁!"
+      ],
+      "ids": [
+        141,
+        5,
+        13181,
+        282,
+        129,
+        1942,
+        131,
+        126,
+        8431,
+        268,
+        9,
+        5,
+        730,
+        794,
+        4,
+        84,
+        5,
+        48,
+        178,
+        806,
+        156
+      ]
+    },
+    {
+      "text": "  Des   espaces    en trop   ",
+      "pieces": [
+        "▁Des",
+        "▁espaces",
+        "▁en",
+        "▁trop"
+      ],
+      "ids": [
+        326,
+        5979,
+        17,
+        799
+      ]
+    },
+    {
+      "text": "Œuvre, cœur, ﬁn, ＡＢＣ, ½ et l’apostrophe typographique.",
+      "pieces": [
+        "▁",
+        "Œ",
+        "uvre",
+        ",",
+        "▁cœur",
+        ",",
+        "▁fin",
+        ",",
+        "▁A",
+        "BC",
+        ",",
+        "▁",
+        "1⁄2",
+        "▁et",
+        "▁l",
+        "’",
+        "apo",
+        "s",
+        "tro",
+        "phe",
+        "▁typ",
+        "ographique",
+        "."
+      ],
+      "ids": [
+        34,
+        22686,
+        11982,
+        4,
+        1605,
+        4,
+        306,
+        4,
+        102,
+        7965,
+        4,
+        34,
+        26332,
+        8,
+        9,
+        0,
+        18778,
+        15,
+        3297,
+        9288,
+        20635,
+        18375,
+        6
+      ]
+    },
+    {
+      "text": "Un émoji 🙂 au milieu, et des chiffres : 1 234,56 €.",
+      "pieces": [
+        "▁Un",
+        "▁",
+        "émo",
+        "ji",
+        "▁",
+        "🙂",
+        "▁au",
+        "▁milieu",
+        ",",
+        "▁et",
+        "▁des",
+        "▁chiffres",
+        "▁:",
+        "▁1",
+        "▁234",
+        ",",
+        "56",
+        "▁€",
+        "."
+      ],
+      "ids": [
+        211,
+        34,
+        11864,
+        5569,
+        34,
+        29935,
+        27,
+        1053,
+        4,
+        8,
+        10,
+        2500,
+        51,
+        90,
+        21258,
+        4,
+        3665,
+        835,
+        6
+      ]
+    },
+    {
+      "text": "MAJUSCULES ET minuscules mélangées",
+      "pieces": [
+        "▁MA",
+        "J",
+        "US",
+        "CU",
+        "LES",
+        "▁ET",
+        "▁minuscule",
+        "s",
+        "▁mélangé",
+        "es"
+      ],
+      "ids": [
+        8909,
+        1068,
+        2486,
+        21088,
+        11447,
+        1195,
+        20966,
+        15,
+        13560,
+        72
+      ]
+    },
+    {
+      "text": "",
+      "pieces": [],
+      "ids": []
+    },
+    {
+      "text": "Ligne un\nligne deux\ttabulée",
+      "pieces": [
+        "▁Ligne",
+        "▁un",
+        "▁ligne",
+        "▁deux",
+        "▁ta",
+        "bul",
+        "ée"
+      ],
+      "ids": [
+        8706,
+        23,
+        430,
+        104,
+        969,
+        10945,
+        734
+      ]
+    }
+  ],
+  "special": {
+    "unk": 0,
+    "bos": 1,
+    "eos": 2,
+    "pad": -1
+  }
+}

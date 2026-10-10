@@ -1,0 +1,153 @@
+{
+  "manifest": {
+    "model_key": "table-decoder_float32",
+    "compute_type": "float32",
+    "architecture": null,
+    "graphs": [
+      {
+        "filename": "model.onnx",
+        "role": "decoder_with_past",
+        "sha256": null,
+        "size_mb": 0.0,
+        "inputs": [
+          "input_ids",
+          "attention_mask",
+          "past_key_values.0.key",
+          "past_key_values.0.value"
+        ],
+        "outputs": [
+          "logits",
+          "present.0.key",
+          "present.0.value"
+        ],
+        "external_data": []
+      }
+    ],
+    "tokenizer_file": null,
+    "logits_vocab_size": 24,
+    "kv": {
+      "num_layers": 1,
+      "num_heads": 1,
+      "head_dim": 1,
+      "has_cross_attention": false,
+      "dtype": "float32"
+    },
+    "exposes_cross_qk": false,
+    "extra": {},
+    "version": 2
+  },
+  "prompts": [
+    [
+      4,
+      9
+    ],
+    [
+      17,
+      2
+    ]
+  ],
+  "cases": {
+    "greedy": {
+      "sequences": [
+        [
+          0,
+          10,
+          15,
+          18,
+          22,
+          1,
+          18,
+          22,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sum_logprob": [
+        -10.512191236019135,
+        -11.417153120040894
+      ],
+      "finish_reasons": [
+        "max_length",
+        "max_length"
+      ]
+    },
+    "beam3": {
+      "sequences": [
+        [
+          0,
+          10,
+          15,
+          18,
+          15,
+          18,
+          15,
+          18,
+          22
+        ],
+        [
+          6,
+          14,
+          21,
+          13,
+          12,
+          15,
+          18,
+          4,
+          21
+        ]
+      ],
+      "sum_logprob": [
+        -9.129862427711487,
+        -9.718308260198683
+      ],
+      "finish_reasons": [
+        "max_length",
+        "max_length"
+      ]
+    },
+    "no_repeat_2": {
+      "sequences": [
+        [
+          0,
+          10,
+          15,
+          18,
+          22,
+          1,
+          18,
+          15,
+          20
+        ],
+        [
+          2,
+          2,
+          22,
+          1,
+          18,
+          22,
+          18,
+          15,
+          18
+        ]
+      ],
+      "sum_logprob": [
+        -10.562811017036438,
+        -12.062148571014404
+      ],
+      "finish_reasons": [
+        "max_length",
+        "max_length"
+      ]
+    }
+  }
+}

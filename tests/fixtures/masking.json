@@ -1,0 +1,132 @@
+{
+  "cases": [
+    {
+      "text": "Run `pip install x` then ```python\nprint(1)\n``` and done.",
+      "masked": "Run  __YN_MASK_CODE_1__  then  __YN_MASK_CODE_0__  and done.",
+      "spans": [
+        {
+          "token": "__YN_MASK_CODE_0__",
+          "original": "```python\nprint(1)\n```",
+          "kind": "code",
+          "glued_before": false,
+          "glued_after": false
+        },
+        {
+          "token": "__YN_MASK_CODE_1__",
+          "original": "`pip install x`",
+          "kind": "code",
+          "glued_before": false,
+          "glued_after": false
+        }
+      ],
+      "unmasked": "Run `pip install x` then ```python\nprint(1)\n``` and done.",
+      "pruned": "Run `pip install x` then ```python\nprint(1)\n``` done.",
+      "kept": "Run __YN_MASK_CODE_1__ then __YN_MASK_CODE_0__ done."
+    },
+    {
+      "text": "The formula $E=mc^2$ and $$\\int f$$ and \\(a+b\\) and \\[x\\].",
+      "masked": "The formula  __YN_MASK_MATH_3__  and  __YN_MASK_MATH_0__  and  __YN_MASK_MATH_2__  and  __YN_MASK_MATH_1__ .",
+      "spans": [
+        {
+          "token": "__YN_MASK_MATH_0__",
+          "original": "$$\\int f$$",
+          "kind": "math",
+          "glued_before": false,
+          "glued_after": false
+        },
+        {
+          "token": "__YN_MASK_MATH_1__",
+          "original": "\\[x\\]",
+          "kind": "math",
+          "glued_before": false,
+          "glued_after": true
+        },
+        {
+          "token": "__YN_MASK_MATH_2__",
+          "original": "\\(a+b\\)",
+          "kind": "math",
+          "glued_before": false,
+          "glued_after": false
+        },
+        {
+          "token": "__YN_MASK_MATH_3__",
+          "original": "$E=mc^2$",
+          "kind": "math",
+          "glued_before": false,
+          "glued_after": false
+        }
+      ],
+      "unmasked": "The formula $E=mc^2$ and $$\\int f$$ and \\(a+b\\) and \\[x\\].",
+      "pruned": "The $E=mc^2$ and $$\\int f$$ and \\(a+b\\) \\[x\\].",
+      "kept": "The __YN_MASK_MATH_3__ and __YN_MASK_MATH_0__ and __YN_MASK_MATH_2__ __YN_MASK_MATH_1__ ."
+    },
+    {
+      "text": "Hello {{ name }}, your code is {code} (see `ref`), ok?",
+      "masked": "Hello  __YN_MASK_VARIABLE_1__ , your code is  __YN_MASK_VARIABLE_2__  (see  __YN_MASK_CODE_0__ ), ok?",
+      "spans": [
+        {
+          "token": "__YN_MASK_CODE_0__",
+          "original": "`ref`",
+          "kind": "code",
+          "glued_before": false,
+          "glued_after": true
+        },
+        {
+          "token": "__YN_MASK_VARIABLE_1__",
+          "original": "{{ name }}",
+          "kind": "variable",
+          "glued_before": false,
+          "glued_after": true
+        },
+        {
+          "token": "__YN_MASK_VARIABLE_2__",
+          "original": "{code}",
+          "kind": "variable",
+          "glued_before": false,
+          "glued_after": false
+        }
+      ],
+      "unmasked": "Hello {{ name }}, your code is {code} (see `ref`), ok?",
+      "pruned": "Hello {{ name }}, your is {code} `ref`),",
+      "kept": "Hello __YN_MASK_VARIABLE_1__ , your is __YN_MASK_VARIABLE_2__ __YN_MASK_CODE_0__ ),"
+    },
+    {
+      "text": "Plain text without anything.",
+      "masked": "Plain text without anything.",
+      "spans": [],
+      "unmasked": "Plain text without anything.",
+      "pruned": "Plain without anything.",
+      "kept": "Plain without anything."
+    },
+    {
+      "text": "Glued:(`x`), and `a``b` next.",
+      "masked": "Glued:( __YN_MASK_CODE_0__ ), and  __YN_MASK_CODE_1__  __YN_MASK_CODE_2__  next.",
+      "spans": [
+        {
+          "token": "__YN_MASK_CODE_0__",
+          "original": "`x`",
+          "kind": "code",
+          "glued_before": true,
+          "glued_after": true
+        },
+        {
+          "token": "__YN_MASK_CODE_1__",
+          "original": "`a`",
+          "kind": "code",
+          "glued_before": false,
+          "glued_after": true
+        },
+        {
+          "token": "__YN_MASK_CODE_2__",
+          "original": "`b`",
+          "kind": "code",
+          "glued_before": true,
+          "glued_after": false
+        }
+      ],
+      "unmasked": "Glued:(`x`), and `a` `b` next.",
+      "pruned": "Glued:(`x`), and `a` `b` next.",
+      "kept": "Glued:( __YN_MASK_CODE_0__ ), and __YN_MASK_CODE_1__ __YN_MASK_CODE_2__ next."
+    }
+  ]
+}

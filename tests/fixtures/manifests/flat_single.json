@@ -1,0 +1,26 @@
+{
+  "model_key": "yolo26n",
+  "compute_type": "float32",
+  "architecture": null,
+  "graphs": [
+    {
+      "filename": "model.onnx",
+      "role": "single",
+      "sha256": null,
+      "size_mb": 9.4,
+      "inputs": [
+        "images"
+      ],
+      "outputs": [
+        "output0"
+      ],
+      "external_data": []
+    }
+  ],
+  "tokenizer_file": null,
+  "logits_vocab_size": null,
+  "kv": null,
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

@@ -1,0 +1,29 @@
+{
+  "model_key": "tiny.en_fused",
+  "compute_type": "float32",
+  "architecture": "whisper",
+  "graphs": [
+    {
+      "filename": "whisper_beamsearch.onnx",
+      "role": "fused",
+      "sha256": null,
+      "size_mb": 150.0,
+      "inputs": [
+        "input_features",
+        "max_length",
+        "num_beams"
+      ],
+      "outputs": [
+        "sequences",
+        "sequences_scores"
+      ],
+      "external_data": []
+    }
+  ],
+  "tokenizer_file": null,
+  "logits_vocab_size": null,
+  "kv": null,
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

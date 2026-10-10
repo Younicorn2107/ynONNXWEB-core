@@ -1,0 +1,130 @@
+{
+  "scores": [
+    {
+      "text": "The quick brown fox jumps over the lazy dog.",
+      "answer": [
+        "en",
+        0.6974507570266724
+      ]
+    },
+    {
+      "text": "Le renard brun rapide saute par-dessus le chien paresseux.",
+      "answer": [
+        "fr",
+        0.818234920501709
+      ]
+    },
+    {
+      "text": "Der schnelle braune Fuchs springt über den faulen Hund.",
+      "answer": [
+        "de",
+        0.9447035789489746
+      ]
+    },
+    {
+      "text": "El rápido zorro marrón salta sobre el perro perezoso.",
+      "answer": [
+        "es",
+        0.9217135906219482
+      ]
+    },
+    {
+      "text": "Быстрая коричневая лиса прыгает через ленивую собаку.",
+      "answer": [
+        "ru",
+        0.9599481225013733
+      ]
+    },
+    {
+      "text": "敏捷的棕色狐狸跳过了懒狗。",
+      "answer": [
+        "ja",
+        0.5168367624282837
+      ]
+    },
+    {
+      "text": "素早い茶色の狐がのろまな犬を飛び越える。",
+      "answer": [
+        "ja",
+        1.0
+      ]
+    },
+    {
+      "text": "빠른 갈색 여우가 게으른 개를 뛰어넘는다.",
+      "answer": [
+        "ko",
+        0.9996539354324341
+      ]
+    },
+    {
+      "text": "THIS IS A SHOUTED SENTENCE IN ENGLISH",
+      "answer": [
+        "en",
+        0.9583592414855957
+      ]
+    },
+    {
+      "text": "ok",
+      "answer": [
+        "en",
+        0.6297650337219238
+      ]
+    },
+    {
+      "text": "Il pleut.",
+      "answer": [
+        "it",
+        0.4871754050254822
+      ]
+    },
+    {
+      "text": "Questo è un testo italiano abbastanza lungo per essere riconosciuto.",
+      "answer": [
+        "it",
+        0.9994387030601501
+      ]
+    },
+    {
+      "text": "Dit is een Nederlandse zin over het weer van vandaag.",
+      "answer": [
+        "nl",
+        0.996951699256897
+      ]
+    },
+    {
+      "text": "Isto é uma frase em português sobre o tempo.",
+      "answer": [
+        "pt",
+        0.9999398589134216
+      ]
+    },
+    {
+      "text": "a\nb\tc  d",
+      "answer": [
+        "en",
+        0.12450417876243591
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "text": "Bonjour à tous, voici le rapport de la semaine.",
+      "lang": "fr",
+      "start": 0,
+      "end": 47
+    },
+    {
+      "text": "The figures are better than expected this quarter.",
+      "lang": "en",
+      "start": 48,
+      "end": 98
+    },
+    {
+      "text": "Merci de votre attention. Ok.",
+      "lang": "fr",
+      "start": 99,
+      "end": 128
+    }
+  ],
+  "mixed": "Bonjour à tous, voici le rapport de la semaine. The figures are better than expected this quarter. Merci de votre attention. Ok."
+}

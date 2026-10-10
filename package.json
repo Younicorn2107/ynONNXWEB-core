@@ -1,0 +1,75 @@
+{
+  "name": "@youni/onnxweb-core",
+  "version": "1.0.0",
+  "description": "Run ONNX models in the browser — NPU, GPU or CPU — with the model catalogue and manifest format of the ynONNX pack.",
+  "license": "Apache-2.0",
+  "author": "Youni",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "import": "./dist/ynonnxweb.bundle.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build",
+    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
+  },
+  "peerDependencies": {
+    "onnxruntime-web": ">=1.20.0"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-web": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@webgpu/types": "^0.1.72",
+    "onnxruntime-web": "^1.29.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "eslint": "^9.36.0",
+    "@eslint/js": "^9.36.0",
+    "typescript-eslint": "^8.44.0"
+  },
+  "keywords": [
+    "onnx",
+    "onnxruntime",
+    "webgpu",
+    "webnn",
+    "wasm",
+    "inference",
+    "browser",
+    "ynonnx"
+  ],
+  "dependencies": {
+    "@huggingface/tokenizers": "^0.2.0"
+  }
+}

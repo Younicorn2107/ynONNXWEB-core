@@ -1,0 +1,351 @@
+[
+  {
+    "name": "cache_branch_beats_encoder_filename",
+    "inputs": [
+      "input_ids",
+      "encoder_hidden_states",
+      "past_key_values.0.decoder.key",
+      "use_cache_branch"
+    ],
+    "outputs": [
+      "logits",
+      "present.0.decoder.key"
+    ],
+    "filename": "encoder_model.onnx",
+    "expect": "decoder_merged"
+  },
+  {
+    "name": "cache_branch_minimal",
+    "inputs": [
+      "input_ids",
+      "use_cache_branch"
+    ],
+    "outputs": [
+      "logits"
+    ],
+    "filename": "",
+    "expect": "decoder_merged"
+  },
+  {
+    "name": "past_and_ids",
+    "inputs": [
+      "input_ids",
+      "past_key_values.0.decoder.key",
+      "past_key_values.0.decoder.value"
+    ],
+    "outputs": [
+      "logits",
+      "present.0.decoder.key"
+    ],
+    "filename": "model.onnx",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "past_and_encoder_states_without_ids",
+    "inputs": [
+      "encoder_hidden_states",
+      "past_key_values.0.encoder.key"
+    ],
+    "outputs": [
+      "logits"
+    ],
+    "filename": "",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "past_and_encoder_outputs_alias",
+    "inputs": [
+      "encoder_outputs",
+      "past_key_values.3.encoder.value"
+    ],
+    "outputs": [
+      "logits"
+    ],
+    "filename": "",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "present_and_ids_is_prefill",
+    "inputs": [
+      "input_ids",
+      "encoder_hidden_states"
+    ],
+    "outputs": [
+      "logits",
+      "present.0.decoder.key",
+      "present.0.encoder.key"
+    ],
+    "filename": "",
+    "expect": "decoder"
+  },
+  {
+    "name": "decoder_input_ids_alias",
+    "inputs": [
+      "decoder_input_ids"
+    ],
+    "outputs": [
+      "logits",
+      "present.0.decoder.key"
+    ],
+    "filename": "",
+    "expect": "decoder"
+  },
+  {
+    "name": "tokens_alias",
+    "inputs": [
+      "tokens"
+    ],
+    "outputs": [
+      "logits",
+      "present.1.decoder.value"
+    ],
+    "filename": "",
+    "expect": "decoder"
+  },
+  {
+    "name": "no_ids_with_present_is_encoder",
+    "inputs": [
+      "input_features"
+    ],
+    "outputs": [
+      "present.0.encoder.key"
+    ],
+    "filename": "",
+    "expect": "encoder"
+  },
+  {
+    "name": "last_hidden_state_is_encoder",
+    "inputs": [
+      "input_features"
+    ],
+    "outputs": [
+      "last_hidden_state"
+    ],
+    "filename": "",
+    "expect": "encoder"
+  },
+  {
+    "name": "encoder_beats_decoder_filename",
+    "inputs": [
+      "input_features"
+    ],
+    "outputs": [
+      "last_hidden_state"
+    ],
+    "filename": "decoder_model.onnx",
+    "expect": "encoder"
+  },
+  {
+    "name": "fused_by_max_length",
+    "inputs": [
+      "input_features",
+      "max_length"
+    ],
+    "outputs": [
+      "sequences"
+    ],
+    "filename": "",
+    "expect": "fused"
+  },
+  {
+    "name": "fused_by_num_beams",
+    "inputs": [
+      "input_features",
+      "num_beams"
+    ],
+    "outputs": [
+      "sequences",
+      "sequences_scores"
+    ],
+    "filename": "",
+    "expect": "fused"
+  },
+  {
+    "name": "fused_by_sequences_output_only",
+    "inputs": [
+      "input_features"
+    ],
+    "outputs": [
+      "sequences"
+    ],
+    "filename": "",
+    "expect": "fused"
+  },
+  {
+    "name": "decoder_only_llm",
+    "inputs": [
+      "input_ids",
+      "attention_mask",
+      "position_ids",
+      "past_key_values.0.key"
+    ],
+    "outputs": [
+      "logits",
+      "present.0.key",
+      "present.0.value"
+    ],
+    "filename": "model_q4f16.onnx",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "text_encoder_single",
+    "inputs": [
+      "input_ids",
+      "attention_mask",
+      "token_type_ids"
+    ],
+    "outputs": [
+      "last_hidden_state"
+    ],
+    "filename": "model.onnx",
+    "expect": "single"
+  },
+  {
+    "name": "filename_encoder_encoder_model.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "encoder_model.onnx",
+    "expect": "encoder"
+  },
+  {
+    "name": "filename_encoder_encoder_model_q4.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "encoder_model_q4.onnx",
+    "expect": "encoder"
+  },
+  {
+    "name": "filename_merged_decoder_model_merged.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "decoder_model_merged.onnx",
+    "expect": "decoder_merged"
+  },
+  {
+    "name": "filename_merged_decoder_model_merged_quantized.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "decoder_model_merged_quantized.onnx",
+    "expect": "decoder_merged"
+  },
+  {
+    "name": "filename_with_past_decoder_with_past_model.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "decoder_with_past_model.onnx",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "filename_withpast_decoder_withpast.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "decoder_withpast.onnx",
+    "expect": "decoder_with_past"
+  },
+  {
+    "name": "filename_decoder_decoder_model.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "decoder_model.onnx",
+    "expect": "decoder"
+  },
+  {
+    "name": "filename_single_model.onnx",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "model.onnx",
+    "expect": "single"
+  },
+  {
+    "name": "filename_empty_blank",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "",
+    "expect": "single"
+  },
+  {
+    "name": "filename_uppercase_ENCODER_MODEL.ONNX",
+    "inputs": [
+      "x"
+    ],
+    "outputs": [
+      "y"
+    ],
+    "filename": "ENCODER_MODEL.ONNX",
+    "expect": "encoder"
+  },
+  {
+    "name": "nothing_at_all",
+    "inputs": [],
+    "outputs": [],
+    "filename": "",
+    "expect": "single"
+  },
+  {
+    "name": "empty_inputs_with_present",
+    "inputs": [],
+    "outputs": [
+      "present.0.decoder.key"
+    ],
+    "filename": "",
+    "expect": "encoder"
+  },
+  {
+    "name": "ids_only_no_present",
+    "inputs": [
+      "input_ids"
+    ],
+    "outputs": [
+      "logits"
+    ],
+    "filename": "",
+    "expect": "single"
+  },
+  {
+    "name": "ids_only_no_present_named_decoder",
+    "inputs": [
+      "input_ids"
+    ],
+    "outputs": [
+      "logits"
+    ],
+    "filename": "decoder_model.onnx",
+    "expect": "decoder"
+  }
+]

@@ -1,0 +1,47 @@
+{
+  "model_key": "large-v3-turbo_int4",
+  "compute_type": "int4",
+  "architecture": "whisper",
+  "graphs": [
+    {
+      "filename": "encoder_model_q4.onnx",
+      "role": "encoder",
+      "sha256": null,
+      "size_mb": 405.2,
+      "inputs": [
+        "input_features"
+      ],
+      "outputs": [
+        "last_hidden_state"
+      ],
+      "external_data": []
+    },
+    {
+      "filename": "decoder_model_merged_q4.onnx",
+      "role": "decoder_merged",
+      "sha256": null,
+      "size_mb": 318.7,
+      "inputs": [
+        "input_ids",
+        "encoder_hidden_states",
+        "use_cache_branch"
+      ],
+      "outputs": [
+        "logits"
+      ],
+      "external_data": []
+    }
+  ],
+  "tokenizer_file": "tokenizer.json",
+  "logits_vocab_size": 51866,
+  "kv": {
+    "num_layers": 4,
+    "num_heads": 20,
+    "head_dim": 64,
+    "has_cross_attention": true,
+    "dtype": "float32"
+  },
+  "exposes_cross_qk": false,
+  "extra": {},
+  "version": 2
+}

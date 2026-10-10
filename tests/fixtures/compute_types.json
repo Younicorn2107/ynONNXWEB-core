@@ -1,0 +1,168 @@
+{
+  "accepted": [
+    {
+      "input": "float32",
+      "weights": "float32",
+      "activations": "float32",
+      "canonical": "float32",
+      "quantized": false,
+      "bits": 32
+    },
+    {
+      "input": "float16",
+      "weights": "float16",
+      "activations": "float16",
+      "canonical": "float16",
+      "quantized": false,
+      "bits": 16
+    },
+    {
+      "input": "bfloat16",
+      "weights": "bfloat16",
+      "activations": "bfloat16",
+      "canonical": "bfloat16",
+      "quantized": false,
+      "bits": 16
+    },
+    {
+      "input": "int8",
+      "weights": "int8",
+      "activations": "float32",
+      "canonical": "int8_float32",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "int8_float16",
+      "weights": "int8",
+      "activations": "float16",
+      "canonical": "int8_float16",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "int8_float32",
+      "weights": "int8",
+      "activations": "float32",
+      "canonical": "int8_float32",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "int8_bfloat16",
+      "weights": "int8",
+      "activations": "bfloat16",
+      "canonical": "int8_bfloat16",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "uint8_float16",
+      "weights": "uint8",
+      "activations": "float16",
+      "canonical": "uint8_float16",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "int4",
+      "weights": "int4",
+      "activations": "float32",
+      "canonical": "int4_float32",
+      "quantized": true,
+      "bits": 4
+    },
+    {
+      "input": "int4_float16",
+      "weights": "int4",
+      "activations": "float16",
+      "canonical": "int4_float16",
+      "quantized": true,
+      "bits": 4
+    },
+    {
+      "input": "int4_float32",
+      "weights": "int4",
+      "activations": "float32",
+      "canonical": "int4_float32",
+      "quantized": true,
+      "bits": 4
+    },
+    {
+      "input": "int2",
+      "weights": "int2",
+      "activations": "float32",
+      "canonical": "int2_float32",
+      "quantized": true,
+      "bits": 2
+    },
+    {
+      "input": "int2_float16",
+      "weights": "int2",
+      "activations": "float16",
+      "canonical": "int2_float16",
+      "quantized": true,
+      "bits": 2
+    },
+    {
+      "input": "int16_float32",
+      "weights": "int16",
+      "activations": "float32",
+      "canonical": "int16_float32",
+      "quantized": true,
+      "bits": 16
+    },
+    {
+      "input": "float8_e4m3",
+      "weights": "float8_e4m3",
+      "activations": "float32",
+      "canonical": "float8_e4m3_float32",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "float8_e4m3_float16",
+      "weights": "float8_e4m3",
+      "activations": "float16",
+      "canonical": "float8_e4m3_float16",
+      "quantized": true,
+      "bits": 8
+    },
+    {
+      "input": "auto",
+      "weights": "auto",
+      "activations": "auto",
+      "canonical": "auto",
+      "quantized": false,
+      "bits": 32
+    },
+    {
+      "input": "default",
+      "weights": "auto",
+      "activations": "auto",
+      "canonical": "auto",
+      "quantized": false,
+      "bits": 32
+    },
+    {
+      "input": "  INT8_FLOAT16  ",
+      "weights": "int8",
+      "activations": "float16",
+      "canonical": "int8_float16",
+      "quantized": true,
+      "bits": 8
+    }
+  ],
+  "rejected": [
+    "",
+    "   ",
+    "int7",
+    "float64",
+    "int8_",
+    "int8_int4",
+    "float32_float16",
+    "bfloat16_float32",
+    "q4_k_m",
+    "int8-float16"
+  ]
+}

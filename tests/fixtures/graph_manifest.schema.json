@@ -1,0 +1,179 @@
+{
+  "$defs": {
+    "GraphEntry": {
+      "description": "One .onnx file of a cache entry, with the role it plays.",
+      "properties": {
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "role": {
+          "default": "single",
+          "title": "Role",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "size_mb": {
+          "default": 0.0,
+          "title": "Size Mb",
+          "type": "number"
+        },
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "outputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Outputs",
+          "type": "array"
+        },
+        "external_data": {
+          "items": {
+            "type": "string"
+          },
+          "title": "External Data",
+          "type": "array"
+        }
+      },
+      "required": [
+        "filename"
+      ],
+      "title": "GraphEntry",
+      "type": "object"
+    },
+    "KVGeometry": {
+      "description": "Shape of one decoder's key/value cache, read once from the graph.\n\nRecorded in the manifest so loads need not re-introspect the decoder.",
+      "properties": {
+        "num_layers": {
+          "default": 0,
+          "title": "Num Layers",
+          "type": "integer"
+        },
+        "num_heads": {
+          "default": 0,
+          "title": "Num Heads",
+          "type": "integer"
+        },
+        "head_dim": {
+          "default": 0,
+          "title": "Head Dim",
+          "type": "integer"
+        },
+        "has_cross_attention": {
+          "default": false,
+          "title": "Has Cross Attention",
+          "type": "boolean"
+        },
+        "dtype": {
+          "default": "float32",
+          "title": "Dtype",
+          "type": "string"
+        }
+      },
+      "title": "KVGeometry",
+      "type": "object"
+    }
+  },
+  "description": "The identity card of a cache entry — ``ynonnx_manifest.json``.\n\nOne JSON read replaces introspecting two or three graphs at every load.\nIt also records what was checked at build time (vocabulary size, KV\ngeometry), so a loader can refuse a mismatched tokenizer up front instead\nof transcribing nonsense.",
+  "properties": {
+    "model_key": {
+      "title": "Model Key",
+      "type": "string"
+    },
+    "compute_type": {
+      "default": "float32",
+      "title": "Compute Type",
+      "type": "string"
+    },
+    "architecture": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Architecture"
+    },
+    "graphs": {
+      "items": {
+        "$ref": "#/$defs/GraphEntry"
+      },
+      "title": "Graphs",
+      "type": "array"
+    },
+    "tokenizer_file": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tokenizer File"
+    },
+    "logits_vocab_size": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Logits Vocab Size"
+    },
+    "kv": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/KVGeometry"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "exposes_cross_qk": {
+      "default": false,
+      "title": "Exposes Cross Qk",
+      "type": "boolean"
+    },
+    "extra": {
+      "additionalProperties": true,
+      "title": "Extra",
+      "type": "object"
+    },
+    "version": {
+      "default": 2,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "model_key"
+  ],
+  "title": "GraphManifest",
+  "type": "object"
+}
