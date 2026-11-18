@@ -1,6 +1,6 @@
 /** `MatMulNBits` with zero points, padded to whole 32-bit words for WebGPU. */
 
-import { encode, operatorTypes, parse, readVarint, str, writeVarint, type Field } from "./protobuf.js";
+import { deeper, elementCount, encode, operatorTypes, packedInts, parse, repeatedInts, str, writeVarint, type Field } from "./protobuf.js";
 
 const MODEL_GRAPH = 7;
 const GRAPH_NODE = 1;
@@ -35,19 +35,7 @@ interface Tensor {
 
 function readTensor(bytes: Uint8Array): Tensor {
   const fields = parse(bytes);
-  const dims: number[] = [];
-  for (const f of fields) {
-    if (f.num !== TENSOR_DIMS) continue;
-    if (f.wire === 0) dims.push(Number(f.int!));
-    else {
-      let at = 0;
-      while (at < f.data!.length) {
-        const [v, next] = readVarint(f.data!, at);
-        dims.push(Number(v));
-        at = next;
-      }
-    }
-  }
+  const dims = repeatedInts(fields, TENSOR_DIMS);
   return { fields, name: str(fields.find((f) => f.num === TENSOR_NAME)), dims, dataType: Number(fields.find((f) => f.num === TENSOR_DATA_TYPE)?.int ?? 0n) };
 }
 
@@ -58,15 +46,9 @@ function rawOf(t: Tensor): Uint8Array | null {
   if (raw) return raw;
   const floats = t.fields.find((f) => f.num === TENSOR_FLOAT_DATA && f.wire === 2)?.data;
   if (floats) return floats;
-  const ints = t.fields.find((f) => f.num === TENSOR_INT32_DATA);
-  if (ints && t.dataType === FLOAT16) {
-    const values: number[] = [];
-    let at = 0;
-    while (at < ints.data!.length) {
-      const [v, next] = readVarint(ints.data!, at);
-      values.push(Number(v));
-      at = next;
-    }
+  const ints = t.fields.filter((f) => f.num === TENSOR_INT32_DATA);
+  if (ints.length > 0 && t.dataType === FLOAT16) {
+    const values = ints.flatMap((f) => (f.int !== undefined ? [Number(f.int)] : f.data ? packedInts(f.data) : []));
     return new Uint8Array(Uint16Array.from(values).buffer);
   }
   return null;
@@ -126,7 +108,7 @@ function attrOf(node: Field[], name: string): [number, number] | null {
   return null;
 }
 
-function rewriteGraph(graphBytes: Uint8Array, outer: ReadonlyMap<string, Tensor>, state: State): Uint8Array {
+function rewriteGraph(graphBytes: Uint8Array, outer: ReadonlyMap<string, Tensor>, state: State, depth = 0): Uint8Array {
   const fields = parse(graphBytes);
   const local = new Map(outer);
   const initializerAt = new Map<string, number>();
@@ -152,8 +134,8 @@ function rewriteGraph(graphBytes: Uint8Array, outer: ReadonlyMap<string, Tensor>
       if (!attr.some((a) => a.num === ATTR_G || a.num === ATTR_GRAPHS)) continue;
       let attrChanged = false;
       for (const [k, a] of attr.entries()) {
-        if (a.num !== ATTR_G && a.num !== ATTR_GRAPHS) continue;
-        const rewritten = rewriteGraph(a.data!, local, state);
+        if ((a.num !== ATTR_G && a.num !== ATTR_GRAPHS) || !a.data) continue;
+        const rewritten = rewriteGraph(a.data, local, state, deeper(depth));
         if (rewritten !== a.data) {
           attr[k] = { ...a, data: rewritten };
           attrChanged = true;
@@ -199,12 +181,16 @@ function padNode(node: Field[], tensors: ReadonlyMap<string, Tensor>, state: Sta
   const bits = attrOf(node, "bits")?.[0] ?? 4;
   const block = attrOf(node, "block_size")?.[0] ?? 0;
   if (!n || !k || bits !== 4 || block <= 0 || !inputs[3] || (inputs.length > 4 && inputs[4])) return null;
+
+  if (elementCount([n[0], k[0], block]) === null || n[0] === 0 || k[0] === 0 || block % 2 !== 0) return null;
   const blocks = Math.ceil(k[0] / block);
   const zpRow = Math.ceil(blocks / 2);
   const rows = n[0];
   if ((rows * zpRow) % 4 === 0) return null;
+
   let target = rows;
-  while ((target * zpRow) % 4 !== 0) target += 1;
+  while ((target * zpRow) % 4 !== 0 && target - rows < 4) target += 1;
+  if ((target * zpRow) % 4 !== 0) return null;
   const weights = tensors.get(inputs[1] ?? "");
   const scales = tensors.get(inputs[2] ?? "");
   const zeros = tensors.get(inputs[3]);

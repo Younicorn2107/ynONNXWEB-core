@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import * as ort from "onnxruntime-web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { IntegrityError } from "../../src/errors.js";
+import { encode } from "../../src/models/protobuf.js";
 import { huggingFaceResolver, serverResolver } from "../../src/models/resolve.js";
 import { MemoryStore } from "../../src/models/store.js";
 import { loadModel } from "../../src/session/load.js";
@@ -96,7 +98,8 @@ describe("a repository without a manifest", () => {
       probe: false,
     });
     try {
-      expect(requested.filter((r) => r.includes("/api/models/"))).toEqual([]);
+      expect(requested.filter((r) => r.includes("/api/models/")).length).toBeGreaterThan(0);
+      expect(requested.filter((r) => r.includes("/resolve/"))).toEqual([]);
       expect(again.assetText("tokenizer.json")).toBe(TOKENIZER);
     } finally {
       await again.close();
@@ -177,14 +180,29 @@ describe("a model republished under the same name", () => {
   const folder = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "graphs", "encoder_decoder");
   const files = ["encoder_model_q4.onnx", "decoder_model_merged_q4.onnx"];
   const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-  const serve = (digests: Record<string, string>) => {
+  const original = (file: string) => new Uint8Array(readFileSync(join(folder, file)));
+  /**
+   * The same graph re-exported: one more metadata entry, so other bytes and another digest, still a
+   * valid model.
+   */
+  const reexported = (file: string) => {
+    const text = (value: string) => new TextEncoder().encode(value);
+    const note = encode([{ num: 14, wire: 2, data: encode([{ num: 1, wire: 2, data: text("export") }, { num: 2, wire: 2, data: text("2") }]) }]);
+    const bytes = original(file);
+    const out = new Uint8Array(bytes.length + note.length);
+    out.set(bytes);
+    out.set(note, bytes.length);
+    return out;
+  };
+  /** The server: these bytes for each graph, these digests in the manifest. */
+  const serve = (bytes: Record<string, Uint8Array>, digests: Record<string, string | null>) => {
     const manifest = JSON.parse(readFileSync(join(folder, "manifest.json"), "utf-8")) as { graphs: { filename: string; sha256: string | null }[] };
     for (const graph of manifest.graphs) graph.sha256 = digests[graph.filename] ?? null;
     const served: Record<string, () => Response> = {
       [`${SERVER}tiny_int4/ynonnx_manifest.json`]: () => Response.json(manifest),
       [`${SERVER}tiny_int4/tokenizer.json`]: () => new Response('{"model":{"type":"BPE","vocab":{}}}'),
     };
-    for (const file of files) served[`${SERVER}tiny_int4/${file}`] = () => new Response(readFileSync(join(folder, file)));
+    for (const file of files) served[`${SERVER}tiny_int4/${file}`] = () => new Response((bytes[file] ?? original(file)) as Uint8Array<ArrayBuffer>);
     vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       requested.push(`${init?.method ?? "GET"} ${url}`);
@@ -200,20 +218,76 @@ describe("a model republished under the same name", () => {
     await bundle.close();
     return requested.filter((r) => r.startsWith("GET") && r.endsWith(".onnx")).map((r) => r.split("/").pop());
   };
+  const real = () => Object.fromEntries(files.map((f) => [f, digest(original(f))]));
 
   it("fetches again the graphs whose digest changed, and only those", async () => {
-    const real = Object.fromEntries(files.map((f) => [f, digest(readFileSync(join(folder, f)))]));
     const store = new MemoryStore();
 
     await store.write("tiny_int4/encoder_model_q4.onnx", new Response(new Uint8Array([1, 2, 3])));
-    serve(real);
-
+    serve({}, real());
     expect((await load(store)).sort()).toEqual([...files].sort());
     expect(await load(store)).toEqual([]);
 
-    serve({ ...real, "decoder_model_merged_q4.onnx": "0".repeat(64) });
+    const decoder = reexported("decoder_model_merged_q4.onnx");
+    serve({ "decoder_model_merged_q4.onnx": decoder }, { ...real(), "decoder_model_merged_q4.onnx": digest(decoder) });
     expect(await load(store)).toEqual(["decoder_model_merged_q4.onnx"]);
     expect(await load(store)).toEqual([]);
+  }, 60000);
+
+  it("records the digest computed from the bytes, not the one the manifest declares", async () => {
+    const store = new MemoryStore();
+    serve({}, { "encoder_model_q4.onnx": null, "decoder_model_merged_q4.onnx": null });
+    await load(store);
+    const recorded = JSON.parse(new TextDecoder().decode((await store.read("tiny_int4/stored_digests.json"))!)) as Record<string, string>;
+
+    expect(recorded["encoder_model_q4.onnx"]).toBe(real()["encoder_model_q4.onnx"]);
+    expect(recorded["decoder_model_merged_q4.onnx"]).toBe(real()["decoder_model_merged_q4.onnx"]);
+    expect(recorded["tokenizer.json"]).toMatch(/^[0-9a-f]{64}$/);
+  }, 60000);
+
+  it("refuses a graph whose bytes do not match the declared digest, and keeps nothing of it", async () => {
+    const store = new MemoryStore();
+
+    serve({ "decoder_model_merged_q4.onnx": reexported("decoder_model_merged_q4.onnx") }, real());
+    await expect(load(store)).rejects.toBeInstanceOf(IntegrityError);
+    expect(await store.has("tiny_int4/decoder_model_merged_q4.onnx")).toBe(false);
+  }, 60000);
+});
+
+describe("an entry stored from one source", () => {
+  it("is not served for another: the second source's files are fetched", async () => {
+    const store = new MemoryStore();
+    const options = { ort: ort as unknown as OrtLike, model: { name: REPO, computeType: "int4" }, store, backends: "wasm" as const, probe: false };
+    await (await loadModel({ ...options, resolver: resolver() })).close();
+
+    const MIRROR = "https://mirror.test";
+    for (const [url, route] of Object.entries(routes)) routes[url.replace(HUB, MIRROR)] = route;
+    requested = [];
+    try {
+      const bundle = await loadModel({ ...options, resolver: huggingFaceResolver({ repo: REPO, subfolder: "onnx", endpoint: MIRROR, manifest: false }) });
+      await bundle.close();
+      expect(requested).toContain(`GET ${MIRROR}/${REPO}/resolve/main/onnx/model_q4.onnx`);
+      expect(requested.some((r) => r.includes(HUB))).toBe(false);
+    } finally {
+      for (const url of Object.keys(routes)) if (url.startsWith(MIRROR)) delete routes[url];
+    }
+  }, 60000);
+
+  it("is described again when its source lists a file at another size", async () => {
+    const store = new MemoryStore();
+    const options = { ort: ort as unknown as OrtLike, model: { name: REPO, computeType: "int4" }, resolver: resolver(), store, backends: "wasm" as const, probe: false };
+    await (await loadModel(options)).close();
+    const root = `${HUB}/api/models/${REPO}/tree/main`;
+    const listing = routes[root]!;
+
+    routes[root] = () => Response.json([file("tokenizer.json", TOKENIZER.length + 1), file("config.json", CONFIG.length)]);
+    requested = [];
+    try {
+      await (await loadModel(options)).close();
+      expect(requested).toContain(`GET ${HUB}/${REPO}/resolve/main/onnx/model_q4.onnx`);
+    } finally {
+      routes[root] = listing;
+    }
   }, 60000);
 });
 
@@ -240,10 +314,13 @@ describe("a server that makes models on demand", () => {
     const SERVER = "https://server.test/models/";
     const folder = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "graphs", "encoder_decoder");
     let made = false;
+    const prepared: unknown[] = [];
     vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       requested.push(`${init?.method ?? "GET"} ${url}`);
-      if (url.startsWith(`${SERVER}prepare?`)) {
+      if (url === `${SERVER}prepare`) {
+        const headers = init?.headers as Record<string, string>;
+        prepared.push({ method: init?.method, type: headers["Content-Type"], auth: headers["Authorization"], body: JSON.parse(String(init?.body)) });
         made = true;
         return Response.json({ ready: true, entry: "tiny_int4" });
       }
@@ -256,9 +333,9 @@ describe("a server that makes models on demand", () => {
       return new Response("not found", { status: 404 });
     });
     requested = [];
-    const bundle = await loadModel({ ort: ort as unknown as OrtLike, model: "tiny", computeType: "int4", resolver: serverResolver({ base: SERVER, prepare: true }), store: new MemoryStore(), backends: "wasm", probe: false });
+    const bundle = await loadModel({ ort: ort as unknown as OrtLike, model: "tiny", computeType: "int4", resolver: serverResolver({ base: SERVER, prepare: true, headers: { Authorization: "Bearer t" } }), store: new MemoryStore(), backends: "wasm", probe: false });
     try {
-      expect(requested).toContain(`GET ${SERVER}prepare?name=tiny&computeType=int4`);
+      expect(prepared).toEqual([{ method: "POST", type: "application/json", auth: "Bearer t", body: { name: "tiny", computeType: "int4" } }]);
       expect(bundle.roles.sort()).toEqual(["decoder_merged", "encoder"]);
     } finally {
       await bundle.close();

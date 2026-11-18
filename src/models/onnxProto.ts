@@ -4,6 +4,8 @@
  */
 
 import { ManifestError } from "../errors.js";
+import { Reader } from "./protobuf.js";
+import { checkFileName } from "../types/manifest.js";
 
 /** One dimension: a fixed size, a symbolic name, or unknown. */
 export type GraphDim = number | string | null;
@@ -52,87 +54,6 @@ export const ONNX_DTYPES: Readonly<Record<number, string>> = {
   11: "float64",
   16: "bfloat16",
 };
-
-class Reader {
-  pos: number;
-
-  constructor(
-    readonly bytes: Uint8Array,
-    start = 0,
-    readonly end = bytes.length,
-  ) {
-    this.pos = start;
-  }
-
-  get done(): boolean {
-    return this.pos >= this.end;
-  }
-
-  varint(): number {
-    let result = 0;
-    let scale = 1;
-    for (let shift = 0; shift < 70; shift += 7) {
-      if (this.pos >= this.end) throw new ManifestError("truncated ONNX graph (varint)");
-      const byte = this.bytes[this.pos++]!;
-      result += (byte & 0x7f) * scale;
-      if ((byte & 0x80) === 0) return result;
-      scale *= 128;
-    }
-    throw new ManifestError("malformed ONNX graph (varint too long)");
-  }
-
-  /** A signed int64 varint, as protobuf writes negative numbers. */
-  int64(): number {
-    const value = this.varint();
-    return value >= 2 ** 63 ? value - 2 ** 64 : value;
-  }
-
-  /** The bounds of a length-delimited field, consumed. */
-  slice(): [number, number] {
-    const length = this.varint();
-    const start = this.pos;
-    const end = start + length;
-    if (end > this.end) throw new ManifestError("truncated ONNX graph (length-delimited field)");
-    this.pos = end;
-    return [start, end];
-  }
-
-  string(): string {
-    const [start, end] = this.slice();
-    return new TextDecoder().decode(this.bytes.subarray(start, end));
-  }
-
-  skip(wireType: number): void {
-    switch (wireType) {
-      case 0:
-        this.varint();
-        return;
-      case 1:
-        this.pos += 8;
-        return;
-      case 2:
-        this.slice();
-        return;
-      case 5:
-        this.pos += 4;
-        return;
-      default:
-        throw new ManifestError(`malformed ONNX graph (wire type ${wireType})`);
-    }
-  }
-
-  /** Walk the fields of the message between `pos` and `end`. */
-  *fields(): Generator<[field: number, wireType: number]> {
-    while (!this.done) {
-      const key = this.varint();
-      yield [Math.floor(key / 8), key & 7];
-    }
-  }
-
-  sub([start, end]: [number, number]): Reader {
-    return new Reader(this.bytes, start, end);
-  }
-}
 
 function readDim(reader: Reader): GraphDim {
   let dim: GraphDim = null;
@@ -249,7 +170,8 @@ export function readGraphInfo(model: Uint8Array): GraphInfo {
       info.largestInitializerBytes = Math.max(info.largestInitializerBytes, bytes);
       if (location) {
         const name = location.split(/[\\/]/).pop() ?? "";
-        if (name && !info.externalData.includes(name)) info.externalData.push(name);
+        checkFileName(name, "an external-data location of the graph");
+        if (!info.externalData.includes(name)) info.externalData.push(name);
       }
     } else {
       reader.skip(wire);

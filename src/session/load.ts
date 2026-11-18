@@ -1,6 +1,6 @@
 /** The two calls a user of this library actually makes. */
 
-import { ManifestError, ModelNotFoundError, QuotaError } from "../errors.js";
+import { AssetTooLargeError, ManifestError, ModelNotFoundError, QuotaError } from "../errors.js";
 import { defaultLogger, type Logger } from "../logger.js";
 import { detectCapabilities } from "../backends/capabilities.js";
 import { probeBackends } from "../backends/probe.js";
@@ -16,6 +16,7 @@ import { choosePublishedGraphs, neededGraphs, SIDE_FILES } from "../models/publi
 import { splitExternalData } from "../models/externalize.js";
 import {
   MANIFEST_VERSION_WITH_EXTERNAL_DATA,
+  isSafeFileName,
   parseManifest,
   serializeManifest,
   totalSizeMb,
@@ -26,12 +27,17 @@ import {
   serverResolver,
   externalDataCandidates,
   filesFromManifest,
+  sourceOf,
   type AssetPlace,
+  type ListedFile,
   type ModelKey,
+  type ModelListing,
   type ModelResolver,
 } from "../models/resolve.js";
 import { fetchAsset, type FetchProgress } from "../models/fetch.js";
 import { ensureRoom, entryOf, holdEntries, releaseEntries, touchEntries } from "../models/eviction.js";
+import { checkSize, resolveLimits, type Limits } from "../models/limits.js";
+import { sha256Hex } from "../models/sha256.js";
 import { ReadOnlyStore, defaultStore, type AssetStore } from "../models/store.js";
 import { ModelBundle, type ModelSession } from "./bundle.js";
 import type { OrtLike, SessionConfig } from "./create.js";
@@ -41,8 +47,17 @@ const MIB = 1024 * 1024;
 /** Where a manifest described on this side is kept between loads. */
 const SYNTHESIZED_MANIFEST = "described_manifest.json";
 
-/** The sha256 of each stored graph, as its published manifest gave it. */
+/**
+ * The SHA-256 of each file of an entry, computed from the bytes when they were downloaded (never
+ * copied from a manifest): what a newer publication's declared digest is compared with.
+ */
 const STORED_DIGESTS = "stored_digests.json";
+
+/** Which source an entry's files came from (`sourceOf(resolver)`). */
+const SOURCE_RECORD = "source.json";
+
+/** The largest manifest or small side file read whole (JSON, configs). */
+const MAX_SIDE_FILE_BYTES = 64 * MIB;
 
 /** One value for the whole model, or one per half. */
 export type PerRole<T> = T | { encoder?: T; decoder?: T; default?: T };
@@ -91,6 +106,12 @@ export interface LoadOptions {
    * rewrites come after.
    */
   rewrite?: (graph: Uint8Array, filename: string) => Uint8Array;
+  /**
+   * The sizes a download, the whole model and one tensor may take (`DEFAULT_LIMITS` otherwise).
+   * Every size a source or a graph states is checked against them before it is allocated or
+   * fetched.
+   */
+  limits?: Partial<Limits>;
 }
 
 type Half = "encoder" | "decoder";
@@ -129,19 +150,142 @@ interface Found {
   rootFiles: ReadonlySet<string>;
 }
 
+/** What `loadModel` keeps beside an entry's files, and how each load reads it. */
+interface Context {
+  options: LoadOptions;
+  logger: Logger;
+  limits: Limits;
+  /** Digests computed while downloading, by entry then file, written once the files are in. */
+  digests: Map<string, Record<string, string>>;
+}
+
 function rootFilesOf(manifest: GraphManifest): Set<string> {
   const listed = manifest.extra["root_files"];
   return new Set(Array.isArray(listed) ? listed.filter((v): v is string => typeof v === "string") : []);
 }
 
-async function fromStore(key: ModelKey, store: AssetStore): Promise<GraphManifest | null> {
-  const bytes = await store.read(`${entryName(key.name, key.computeType)}/${SYNTHESIZED_MANIFEST}`);
-  if (!bytes) return null;
+/**
+ * A response body read whole, refused past `maxBytes`: a manifest or a config is small, and a
+ * source that streams gigabytes in its place must not fill the memory first.
+ */
+async function readBounded(response: Response, maxBytes: number, url: string): Promise<ArrayBuffer> {
+  const declared = Number(response.headers.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > maxBytes) throw new AssetTooLargeError(`${url}: ${declared} bytes is over the limit of ${maxBytes}`);
+  if (!response.body) {
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > maxBytes) throw new AssetTooLargeError(`${url}: ${bytes.byteLength} bytes is over the limit of ${maxBytes}`);
+    return bytes;
+  }
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    length += value.byteLength;
+    if (length > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new AssetTooLargeError(`${url}: the body passed the limit of ${maxBytes} bytes`);
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(length);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return out.buffer;
+}
+
+async function readJson(store: AssetStore, key: string): Promise<unknown> {
   try {
-    return parseManifest(JSON.parse(new TextDecoder().decode(bytes)));
+    const bytes = await store.read(key);
+    return bytes ? (JSON.parse(new TextDecoder().decode(bytes)) as unknown) : null;
   } catch {
     return null;
   }
+}
+
+async function recordedSource(store: AssetStore, entry: string): Promise<string | null> {
+  const record = await readJson(store, `${entry}/${SOURCE_RECORD}`);
+  const source = record && typeof record === "object" ? (record as { source?: unknown }).source : undefined;
+  return typeof source === "string" ? source : null;
+}
+
+/** Make `entry` hold only bytes from `resolver`'s source. */
+async function claimEntry(store: AssetStore, entry: string, resolver: ModelResolver, logger: Logger): Promise<void> {
+  const source = sourceOf(resolver);
+  const recorded = await recordedSource(store, entry);
+  if (recorded === source) return;
+  const keys = (await store.keys()).filter((k) => entryOf(k) === entry);
+  if (keys.length > 0) {
+    logger.info(`${entry} was stored from ${recorded ?? "an unrecorded source"}, not ${source}: fetching it again`);
+    for (const k of keys) await store.delete(k).catch(() => false);
+  }
+  await store.write(`${entry}/${SOURCE_RECORD}`, new Response(JSON.stringify({ source }), { headers: { "content-type": "application/json" } }));
+}
+
+async function recordedDigests(store: AssetStore, entry: string): Promise<Record<string, string>> {
+  const record = await readJson(store, `${entry}/${STORED_DIGESTS}`);
+  if (!record || typeof record !== "object" || Array.isArray(record)) return {};
+  return Object.fromEntries(Object.entries(record as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === "string"));
+}
+
+/** Add the digests computed during this load to each entry's record. */
+async function writeDigests(store: AssetStore, digests: ReadonlyMap<string, Record<string, string>>): Promise<void> {
+  for (const [entry, computed] of digests) {
+    if (Object.keys(computed).length === 0) continue;
+    const recorded = { ...(await recordedDigests(store, entry)), ...computed };
+    await store.write(`${entry}/${STORED_DIGESTS}`, new Response(JSON.stringify(recorded))).catch(() => undefined);
+  }
+}
+
+/**
+ * A stored manifest described on an earlier load, with the source it was described from — null when
+ * none is stored, or when it came from a source not among `resolvers`.
+ */
+async function fromStore(key: ModelKey, store: AssetStore, resolvers: readonly ModelResolver[]): Promise<{ manifest: GraphManifest; resolver: ModelResolver } | null> {
+  const entry = entryName(key.name, key.computeType);
+  const raw = await readJson(store, `${entry}/${SYNTHESIZED_MANIFEST}`);
+  if (raw === null) return null;
+  const source = await recordedSource(store, entry);
+  const resolver = resolvers.find((r) => sourceOf(r) === source);
+  if (!resolver) return null;
+  try {
+    return { manifest: parseManifest(raw), resolver };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether a described manifest still matches its source: every file it was built from is listed at
+ * the size it had then. A repository re-exported under the same names — an upstream fix, or a
+ * poisoned copy — is otherwise never seen again. Offline, or when the source cannot list, the
+ * stored description stands.
+ */
+async function stillListed(key: ModelKey, manifest: GraphManifest, resolver: ModelResolver, options: LoadOptions, logger: Logger): Promise<{ fresh: boolean; listing: ModelListing | null }> {
+  if (!resolver.listFiles || (globalThis.navigator as { onLine?: boolean } | undefined)?.onLine === false) return { fresh: true, listing: null };
+  let listing: ModelListing | null;
+  try {
+    listing = await resolver.listFiles(key, options.signal);
+  } catch (cause) {
+    if (options.signal?.aborted) throw cause;
+    logger.debug(`${resolver.id} could not be listed (${cause instanceof Error ? cause.message : String(cause)}): the stored description of ${key.name} is used`);
+    return { fresh: true, listing: null };
+  }
+  if (!listing) return { fresh: true, listing: null };
+  const sizes = manifest.extra["listed_sizes"];
+  if (!sizes || typeof sizes !== "object" || Array.isArray(sizes)) return { fresh: false, listing };
+  const now = new Map([...listing.graphs, ...listing.root].map((f) => [f.name, f.size]));
+  for (const [name, size] of Object.entries(sizes as Record<string, unknown>)) {
+    if (!now.has(name) || now.get(name) !== size) {
+      logger.info(`${name} of ${key.name} changed at ${resolver.id} (${String(size)} → ${String(now.get(name) ?? "gone")} bytes): describing it again`);
+      return { fresh: false, listing };
+    }
+  }
+  return { fresh: true, listing };
 }
 
 async function published(
@@ -153,13 +297,25 @@ async function published(
   for (const url of resolver.manifestUrls(key)) {
     let response: Response;
     try {
-      response = await fetch(url, { ...(options.signal ? { signal: options.signal } : {}) });
+      response = await fetch(url, {
+        ...(options.signal ? { signal: options.signal } : {}),
+        ...(resolver.headers ? { headers: resolver.headers } : {}),
+      });
     } catch (cause) {
       if (options.signal?.aborted) throw cause;
       tried.push(`${url} (${cause instanceof Error ? cause.message : String(cause)})`);
       continue;
     }
-    if (response.ok) return parseManifest(await response.json());
+    if (response.ok) {
+      const body = new TextDecoder().decode(await readBounded(response, MAX_SIDE_FILE_BYTES, url));
+      let payload: unknown;
+      try {
+        payload = JSON.parse(body);
+      } catch (cause) {
+        throw new ManifestError(`${url} is not JSON`, { cause });
+      }
+      return parseManifest(payload);
+    }
     tried.push(`${url} (HTTP ${response.status})`);
   }
   return null;
@@ -168,20 +324,13 @@ async function published(
 /**
  * Drop the stored graphs a newer publication replaced. A stored file is otherwise served forever: a
  * server that re-exports a model under the same name (a dynamic-size YOLO in place of a fixed one)
- * would never be seen. The digests the manifest declares are recorded with the files; a graph
- * stored before any record is hashed once.
+ * would never be seen.
  */
 async function dropChanged(key: ModelKey, manifest: GraphManifest, store: AssetStore, logger: Logger): Promise<void> {
   const declared = manifest.graphs.filter((g) => g.sha256);
   if (declared.length === 0) return;
   const entry = entryName(key.name, key.computeType);
-  let recorded: Record<string, string> = {};
-  try {
-    const bytes = await store.read(`${entry}/${STORED_DIGESTS}`);
-    if (bytes) recorded = JSON.parse(new TextDecoder().decode(bytes)) as Record<string, string>;
-  } catch {
-    recorded = {};
-  }
+  const recorded = await recordedDigests(store, entry);
   let changed = false;
   for (const graph of declared) {
     const at = `${entry}/${graph.filename}`;
@@ -190,21 +339,21 @@ async function dropChanged(key: ModelKey, manifest: GraphManifest, store: AssetS
       const bytes = await store.read(at);
       if (!bytes) continue;
       digest = await sha256Hex(bytes);
+      recorded[graph.filename] = digest;
+      changed = true;
     }
     if (digest !== graph.sha256) {
       logger.info(`${at} changed upstream: fetching it again`);
       await store.delete(at);
-      for (const sidecar of graph.externalData) await store.delete(`${entry}/${sidecar}`);
+      delete recorded[graph.filename];
+      for (const sidecar of graph.externalData) {
+        await store.delete(`${entry}/${sidecar}`);
+        delete recorded[sidecar];
+      }
+      changed = true;
     }
-    if (recorded[graph.filename] !== graph.sha256) changed = true;
-    recorded[graph.filename] = graph.sha256!;
   }
   if (changed) await store.write(`${entry}/${STORED_DIGESTS}`, new Response(JSON.stringify(recorded)));
-}
-
-async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-  return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /** Describe a model from its own files, for a source that publishes no manifest. */
@@ -218,20 +367,26 @@ async function describe(
   key: ModelKey,
   resolver: ModelResolver,
   storeIn: AssetStore,
-  options: LoadOptions,
-  logger: Logger,
+  context: Context,
+  listed?: ModelListing | null,
 ): Promise<Found | null> {
+  const { options, logger, limits } = context;
   let store = storeIn;
-  const listing = await resolver.listFiles?.(key, options.signal);
-  if (!listing) return null;
+  const raw = listed ?? (await resolver.listFiles?.(key, options.signal));
+  if (!raw) return null;
+
+  const plain = (files: readonly ListedFile[]) => files.filter((f) => isSafeFileName(f.name));
+  const listing: ModelListing = { graphs: plain(raw.graphs), root: plain(raw.root) };
 
   const entry = entryName(key.name, key.computeType);
+  await claimEntry(storeIn, entry, resolver, logger);
   const sizes = new Map(listing.graphs.map((f) => [f.name, f.size ?? 0]));
   const choice = choosePublishedGraphs(listing.graphs.map((f) => f.name), key.computeType);
 
   const announced = listing.graphs
     .filter((f) => choice.graphs.some((graph) => f.name === graph || f.name.startsWith(`${graph}_data`) || f.name.startsWith(`${graph}.data`)))
     .reduce((sum, f) => sum + (f.size ?? 0), 0);
+  checkSize(announced, limits.maxModelBytes, `${key.name} at ${resolver.id}`, (m) => new AssetTooLargeError(m));
   const stored = await Promise.all(choice.graphs.map(async (g) => ((await options.store?.has(`${entry}/${g}`)) ? (sizes.get(g) ?? 0) : 0)));
   try {
     await ensureRoom(options.store ?? defaultStore(), Math.max(0, announced - stored.reduce((a, b) => a + b, 0)), new Set([entry]), logger);
@@ -246,11 +401,15 @@ async function describe(
   );
 
   const files = new Map<string, ArrayBuffer>();
+  const computed = context.digests.get(entry) ?? {};
+  context.digests.set(entry, computed);
   const fetchOne = async (name: string, place: AssetPlace): Promise<ArrayBuffer> => {
     const asset = resolver.assetUrl(key, name, place);
     const bytes = await fetchAsset(asset.url, `${entry}/${name}`, {
       store,
       logger,
+      limits,
+      onDigest: (digest) => (computed[name] = digest),
       ...(options.signal ? { signal: options.signal } : {}),
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
       ...(asset.headers ? { headers: asset.headers } : {}),
@@ -260,6 +419,8 @@ async function describe(
   };
 
   const graphs = [];
+  /** Sidecars taken in parts: in the description by their own name, not their parts'. */
+  const splitFiles = new Set<string>();
   for (const name of choice.graphs) {
     let bytes: Uint8Array = new Uint8Array(await fetchOne(name, "graphs"));
     const sidecarBytes: Record<string, number> = {};
@@ -269,19 +430,22 @@ async function describe(
           `${name} keeps its weights in ${sidecar}, which ${resolver.id} does not publish`,
         );
       }
-      if ((sizes.get(sidecar) ?? 0) <= MAX_SINGLE_BUFFER) {
+      const listedSize = sizes.get(sidecar) ?? 0;
+      if (listedSize <= MAX_SINGLE_BUFFER) {
         sidecarBytes[sidecar] = (await fetchOne(sidecar, "graphs")).byteLength;
         continue;
       }
 
-      const split = splitExternalData(bytes, sidecar);
-      logger.info(`${sidecar} (${Math.round((sizes.get(sidecar) ?? 0) / 2 ** 20)} MB) is taken in ${split.parts.length} parts`);
+      const split = splitExternalData(bytes, sidecar, listedSize);
+      logger.info(`${sidecar} (${Math.round(listedSize / 2 ** 20)} MB) is taken in ${split.parts.length} parts`);
       const asset = resolver.assetUrl(key, sidecar, "graphs");
       for (const part of split.parts) {
         const data = await fetchAsset(asset.url, `${entry}/${part.name}`, {
           store,
           logger,
+          limits,
           range: [part.start, part.end],
+          onDigest: (digest) => (computed[part.name] = digest),
           ...(options.signal ? { signal: options.signal } : {}),
           ...(options.onProgress ? { onProgress: options.onProgress } : {}),
           ...(asset.headers ? { headers: asset.headers } : {}),
@@ -290,6 +454,7 @@ async function describe(
         sidecarBytes[part.name] = data.byteLength;
       }
       bytes = split.bytes;
+      splitFiles.add(sidecar);
     }
     if (bytes.buffer !== files.get(name)) {
       files.set(name, bytes.slice().buffer);
@@ -325,7 +490,10 @@ async function describe(
     architecture,
     tokenizerFile: files.has("tokenizer.json") ? "tokenizer.json" : null,
   });
-  manifest.extra = { described_from: resolver.id, root_files: [...rootFiles] };
+
+  const used = new Set([...files.keys(), ...splitFiles]);
+  const listedSizes = Object.fromEntries([...listing.graphs, ...listing.root].filter((f) => used.has(f.name)).map((f) => [f.name, f.size]));
+  manifest.extra = { described_from: resolver.id, root_files: [...rootFiles], listed_sizes: listedSizes };
   await store.write(
     `${entry}/${SYNTHESIZED_MANIFEST}`,
     new Response(JSON.stringify(serializeManifest(manifest)), {
@@ -339,14 +507,18 @@ async function findManifest(
   key: ModelKey,
   resolvers: readonly ModelResolver[],
   store: AssetStore,
-  options: LoadOptions,
-  logger: Logger,
+  context: Context,
 ): Promise<Found> {
-  const stored = await fromStore(key, store);
+  const { options, logger } = context;
+  const entry = entryName(key.name, key.computeType);
+  let listed: { resolver: ModelResolver; listing: ModelListing } | null = null;
+  const stored = await fromStore(key, store, resolvers);
   if (stored) {
-    const id = stored.extra["described_from"];
-    const resolver = resolvers.find((r) => r.id === id) ?? resolvers[0]!;
-    return { manifest: stored, resolver, files: new Map(), rootFiles: rootFilesOf(stored) };
+    const check = await stillListed(key, stored.manifest, stored.resolver, options, logger);
+    if (check.fresh) return { manifest: stored.manifest, resolver: stored.resolver, files: new Map(), rootFiles: rootFilesOf(stored.manifest) };
+
+    for (const k of (await store.keys()).filter((k) => entryOf(k) === entry)) await store.delete(k).catch(() => false);
+    listed = check.listing ? { resolver: stored.resolver, listing: check.listing } : null;
   }
 
   const tried: string[] = [];
@@ -360,12 +532,13 @@ async function findManifest(
       else tried.push(`${resolver.id} could not prepare it: ${made.error ?? "no reason given"}`);
     }
     if (manifest) {
+      await claimEntry(store, entry, resolver, logger);
       await dropChanged(key, manifest, store, logger);
       return { manifest, resolver, files: new Map(), rootFiles: rootFilesOf(manifest) };
     }
   }
   for (const resolver of resolvers) {
-    const found = await describe(key, resolver, store, options, logger);
+    const found = await describe(key, resolver, store, context, listed?.resolver === resolver ? listed.listing : undefined);
     if (found) return found;
   }
 
@@ -385,9 +558,10 @@ async function fetchOptional(
   url: string,
   storeKey: string,
   store: AssetStore,
-  options: LoadOptions,
+  context: Context,
   headers?: Record<string, string>,
 ): Promise<ArrayBuffer | null> {
+  const { options } = context;
   const stored = await store.read(storeKey);
   if (stored) return stored;
   let response: Response;
@@ -401,7 +575,11 @@ async function fetchOptional(
     return null;
   }
   if (!response.ok) return null;
-  const bytes = await response.arrayBuffer();
+  const bytes = await readBounded(response, context.limits.maxFileBytes, url);
+  const entry = entryOf(storeKey);
+  const computed = context.digests.get(entry) ?? {};
+  context.digests.set(entry, computed);
+  computed[storeKey.slice(entry.length + 1)] = await sha256Hex(bytes);
   await store.write(storeKey, new Response(bytes));
   return bytes;
 }
@@ -419,6 +597,8 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
         : [options.resolver as ModelResolver];
   if (resolvers.length === 0) throw new ManifestError("loadModel needs at least one source");
   let store: AssetStore = options.store ?? defaultStore();
+  const limits = resolveLimits(options.limits);
+  const context: Context = { options, logger, limits, digests: new Map() };
 
   const capabilities = await detectCapabilities();
 
@@ -460,7 +640,7 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
   const encoderPrecision = isRoleMap(options.computeType) || isRoleMap(options.backends) ? precisionFor("encoder") : decoderPrecision;
   key = { ...key, computeType: decoderPrecision };
 
-  const found = await findManifest(key, resolvers, store, options, logger);
+  const found = await findManifest(key, resolvers, store, context);
   let manifest = options.allGraphs ? found.manifest : neededGraphs(found.manifest);
   const files = found.files;
   const origin = new Map<string, { key: ModelKey; found: Found }>();
@@ -469,7 +649,7 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
 
   if (encoderPrecision !== decoderPrecision && manifest.graphs.some((g) => g.role === "encoder")) {
     const encoderKey = { ...key, computeType: encoderPrecision };
-    const encoderFound = await findManifest(encoderKey, resolvers, store, options, logger);
+    const encoderFound = await findManifest(encoderKey, resolvers, store, context);
     const encoderGraph = encoderFound.manifest.graphs.find((g) => g.role === "encoder");
     if (!encoderGraph) {
       throw new ManifestError(`'${key.name}' at ${encoderPrecision} has no encoder to take`);
@@ -490,6 +670,7 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
   }
 
   const totalBytes = totalSizeMb(manifest) * MIB;
+  checkSize(Math.round(totalBytes), limits.maxModelBytes, `${key.name} (${manifest.computeType}), as its manifest sizes it`, (m) => new AssetTooLargeError(m));
 
   const entries = new Set<string>();
   let present = 0;
@@ -520,11 +701,19 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
     }
     const from = origin.get(filename) ?? { key, found };
     const asset = from.found.resolver.assetUrl(from.key, filename, from.found.rootFiles.has(filename) ? "root" : "graphs");
-    const bytes = await fetchAsset(asset.url, `${entryName(from.key.name, from.key.computeType)}/${filename}`, {
+    const entry = entryName(from.key.name, from.key.computeType);
+    const computed = context.digests.get(entry) ?? {};
+    context.digests.set(entry, computed);
+
+    const declared = manifest.graphs.find((g) => g.filename === filename)?.sha256 ?? null;
+    const bytes = await fetchAsset(asset.url, `${entry}/${filename}`, {
       store,
       ...(options.signal ? { signal: options.signal } : {}),
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
       logger,
+      limits,
+      sha256: declared,
+      onDigest: (digest) => (computed[filename] = digest),
       ...(asset.headers ? { headers: asset.headers } : {}),
       overall: { loaded, total: totalBytes },
     });
@@ -539,7 +728,7 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
       const from = origin.get(graph.filename) ?? { key, found };
       const asset = from.found.resolver.assetUrl(from.key, candidate);
       try {
-        const probe = await fetch(asset.url, { method: "HEAD" });
+        const probe = await fetch(asset.url, { method: "HEAD", ...(asset.headers ? { headers: asset.headers } : {}) });
         if (!probe.ok) continue;
       } catch {
         continue;
@@ -548,10 +737,16 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
         `${graph.filename} has an external-data sidecar (${candidate}) that its ` +
           `manifest does not record; fetching it anyway`,
       );
-      const bytes = await fetchAsset(asset.url, `${entryName(from.key.name, from.key.computeType)}/${candidate}`, {
+      const entry = entryName(from.key.name, from.key.computeType);
+      const computed = context.digests.get(entry) ?? {};
+      context.digests.set(entry, computed);
+      const bytes = await fetchAsset(asset.url, `${entry}/${candidate}`, {
         store,
         ...(options.signal ? { signal: options.signal } : {}),
         logger,
+        limits,
+        onDigest: (digest) => (computed[candidate] = digest),
+        ...(asset.headers ? { headers: asset.headers } : {}),
       });
       files.set(candidate, bytes);
       graph.externalData.push(candidate);
@@ -563,9 +758,11 @@ export async function loadModel(options: LoadOptions): Promise<ModelBundle> {
     if (files.has(name)) continue;
     const place: AssetPlace = found.rootFiles.has(name) ? "root" : "graphs";
     const asset = found.resolver.assetUrl(key, name, place);
-    const bytes = await fetchOptional(asset.url, `${entryName(key.name, key.computeType)}/${name}`, store, options, asset.headers);
+    const bytes = await fetchOptional(asset.url, `${entryName(key.name, key.computeType)}/${name}`, store, context, asset.headers);
     if (bytes) files.set(name, bytes);
   }
+
+  await writeDigests(store, context.digests);
 
   await touchEntries(store, entries);
   const bundle = await ModelBundle.create({

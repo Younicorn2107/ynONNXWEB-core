@@ -2,8 +2,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DownloadError, IntegrityError, StorageError } from "../../src/errors.js";
+import { createHash } from "node:crypto";
+
+import { AssetTooLargeError, DownloadError, IntegrityError, StorageError } from "../../src/errors.js";
 import { fetchAsset } from "../../src/models/fetch.js";
+import { Sha256, sha256Hex } from "../../src/models/sha256.js";
 import { MemoryStore, type AssetStore } from "../../src/models/store.js";
 
 /**
@@ -332,7 +335,8 @@ describe("a cache that refuses the write", () => {
         if (init?.method === "HEAD") {
           return new Response(null, {
             status: 200,
-            headers: { "content-length": String(total), "accept-ranges": "bytes" },
+
+            headers: { "content-length": String(total), "accept-ranges": "bytes", etag: "\"v1\"" },
           });
         }
         const range = /bytes=(\d+)-(\d+)/.exec(String((init?.headers as Record<string, string>)?.["Range"] ?? ""));
@@ -353,5 +357,140 @@ describe("a cache that refuses the write", () => {
     expect(store.written.length).toBeGreaterThan(0);
     expect(await store.keys()).not.toHaveLength(0);
     vi.unstubAllGlobals();
+  });
+});
+
+const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+
+describe("resume needs to know which file the parts belong to", () => {
+  it("keeps no part and restarts from zero when the server sends no ETag nor Last-Modified", async () => {
+    const body = makeBody(SIZE);
+    const store = new MemoryStore();
+    const failing = fakeServer(body, { failSlices: new Map([[2, 99]]), etag: null });
+    globalThis.fetch = failing.impl as unknown as typeof fetch;
+    await expect(fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE })).rejects.toThrow(DownloadError);
+
+    expect(await store.keys()).toEqual([]);
+
+    const healthy = fakeServer(body, { etag: null });
+    globalThis.fetch = healthy.impl as unknown as typeof fetch;
+    const out = await fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE });
+    expect(new Uint8Array(out)).toEqual(body);
+    expect(healthy.stats.bytesSent).toBe(SIZE);
+  }, 20000);
+
+  it("does not resume from the parts of a file of another size, whatever its ETag", async () => {
+    const store = new MemoryStore();
+    const first = fakeServer(makeBody(SIZE), { failSlices: new Map([[2, 99]]), etag: '"same"' });
+    globalThis.fetch = first.impl as unknown as typeof fetch;
+    await expect(fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE })).rejects.toThrow();
+
+    const body2 = makeBody(SIZE + 1).map((b) => (b + 7) % 251);
+    const second = fakeServer(body2, { etag: '"same"' });
+    globalThis.fetch = second.impl as unknown as typeof fetch;
+    const out = await fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE });
+    expect(new Uint8Array(out)).toEqual(body2);
+    expect(second.stats.bytesSent).toBe(SIZE + 1);
+  }, 20000);
+});
+
+describe("the digest a manifest declares", () => {
+  it("is checked before anything is stored: a mismatch throws IntegrityError and keeps nothing", async () => {
+    const body = makeBody(SIZE);
+    globalThis.fetch = fakeServer(body).impl as unknown as typeof fetch;
+    const store = new MemoryStore();
+    await expect(
+      fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE, sha256: "0".repeat(64) }),
+    ).rejects.toBeInstanceOf(IntegrityError);
+    expect(await store.keys()).toEqual([]);
+  });
+
+  it("is checked on a streamed download too", async () => {
+    globalThis.fetch = fakeServer(makeBody(SIZE), { acceptsRanges: false }).impl as unknown as typeof fetch;
+    const store = new MemoryStore();
+    await expect(fetchAsset("https://x/m.onnx", "m.onnx", { store, sha256: "f".repeat(64) })).rejects.toBeInstanceOf(IntegrityError);
+    expect(await store.has("m.onnx")).toBe(false);
+  });
+
+  it("passes when it matches, and the digest computed from the bytes is reported", async () => {
+    const body = makeBody(SIZE);
+    globalThis.fetch = fakeServer(body).impl as unknown as typeof fetch;
+    const seen: string[] = [];
+    const out = await fetchAsset("https://x/m.onnx", "m.onnx", {
+      store: new MemoryStore(),
+      sliceBytes: SLICE,
+      sha256: sha(body).toUpperCase(),
+      onDigest: (d) => seen.push(d),
+    });
+    expect(new Uint8Array(out)).toEqual(body);
+    expect(seen).toEqual([sha(body)]);
+  });
+
+  it("drops parts kept from an older file, and takes the file whole when the assembly fails it", async () => {
+    const store = new MemoryStore();
+    const first = fakeServer(makeBody(SIZE), { failSlices: new Map([[2, 99]]) });
+    globalThis.fetch = first.impl as unknown as typeof fetch;
+    await expect(fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE })).rejects.toThrow();
+    const body2 = makeBody(SIZE).map((b) => (b + 3) % 251);
+    const second = fakeServer(body2);
+    globalThis.fetch = second.impl as unknown as typeof fetch;
+    const out = await fetchAsset("https://x/m.onnx", "m.onnx", { store, sliceBytes: SLICE, sha256: sha(body2) });
+    expect(new Uint8Array(out)).toEqual(body2);
+    expect(second.stats.full).toBe(1);
+    expect((await store.keys()).filter((k) => k.includes(".part"))).toEqual([]);
+  }, 20000);
+
+  it("hashes a large buffer in place, the same as the native digest", async () => {
+    for (const size of [0, 1, 55, 56, 63, 64, 65, 1000, 70_001]) {
+      const bytes = makeBody(size);
+      expect(new Sha256().update(bytes.subarray(0, size >> 1)).update(bytes.subarray(size >> 1)).hex()).toBe(sha(bytes));
+      expect(await sha256Hex(bytes)).toBe(sha(bytes));
+    }
+  });
+});
+
+describe("sizes a server states", () => {
+  const limits = (maxFileBytes: number) => ({ maxFileBytes, maxModelBytes: 2 ** 40, maxTensorBytes: 2 ** 30 });
+
+  it("refuses a Content-Length over the limit before allocating or fetching anything", async () => {
+    const server = fakeServer(makeBody(SIZE));
+    globalThis.fetch = server.impl as unknown as typeof fetch;
+    await expect(
+      fetchAsset("https://x/m.onnx", "m.onnx", { store: new MemoryStore(), sliceBytes: SLICE, limits: limits(SIZE - 1) }),
+    ).rejects.toBeInstanceOf(AssetTooLargeError);
+    expect(server.stats.ranges).toEqual([]);
+    expect(server.stats.full).toBe(0);
+  });
+
+  it("stops a body with no usable length at the limit", async () => {
+    const body = makeBody(SIZE);
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      if (init?.method === "HEAD") return new Response(null, { status: 200, headers: { "content-length": "NaN" } });
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(body);
+          controller.enqueue(body);
+          controller.close();
+        },
+      });
+      return new Response(stream, { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(fetchAsset("https://x/m.onnx", "m.onnx", { store: new MemoryStore(), limits: limits(SIZE + 10) })).rejects.toBeInstanceOf(
+      AssetTooLargeError,
+    );
+  });
+
+  it("takes a slice from a file that changed size meanwhile as an integrity failure, not as a part", async () => {
+    const body = makeBody(SIZE);
+    const server = fakeServer(body);
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      const response = await server.impl(url, init);
+      if (response.status !== 206) return response;
+      return new Response(await response.arrayBuffer(), { status: 206, headers: { "content-range": `bytes 0-1/${SIZE * 2}` } });
+    }) as unknown as typeof fetch;
+
+    const out = await fetchAsset("https://x/m.onnx", "m.onnx", { store: new MemoryStore(), sliceBytes: SLICE });
+    expect(new Uint8Array(out)).toEqual(body);
+    expect(server.stats.full).toBe(1);
   });
 });

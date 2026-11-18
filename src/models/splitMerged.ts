@@ -1,6 +1,6 @@
 /** A merged decoder taken apart into its two branches, for WebGPU. */
 
-import { encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
+import { deeper, encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
 
 const MODEL_GRAPH = 7;
 const GRAPH_NODE = 1;
@@ -25,13 +25,13 @@ const bytesOf = (text: string) => new TextEncoder().encode(text);
 const nameOf = (value: Field) => str(parse(value.data!).find((x) => x.num === VALUE_NAME));
 
 /** Every name a node list reads, nested subgraphs included. */
-function readNames(nodes: readonly Field[], into: Set<string>): void {
+function readNames(nodes: readonly Field[], into: Set<string>, depth = 0): void {
   for (const node of nodes) {
     for (const f of parse(node.data!)) {
       if (f.num === NODE_INPUT) into.add(str(f));
       else if (f.num === NODE_ATTRIBUTE) {
         for (const a of parse(f.data!)) {
-          if ((a.num === ATTR_G || a.num === ATTR_GRAPHS) && a.data) readNames(parse(a.data).filter((g) => g.num === GRAPH_NODE), into);
+          if ((a.num === ATTR_G || a.num === ATTR_GRAPHS) && a.data) readNames(parse(a.data).filter((g) => g.num === GRAPH_NODE), into, deeper(depth));
         }
       }
     }

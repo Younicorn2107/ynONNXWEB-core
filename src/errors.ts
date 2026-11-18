@@ -149,6 +149,14 @@ export class QuotaError extends StorageError {
 export class IntegrityError extends DownloadError {
   static override readonly code: string = "IntegrityError";
 }
+/**
+ * A file (or a model, or a tensor) larger than the limits a load runs under (`LoadOptions.limits`):
+ * refused before anything is allocated. Not retryable: the same source sends the same size.
+ */
+export class AssetTooLargeError extends DownloadError {
+  static override readonly code: string = "AssetTooLargeError";
+  static override readonly retryable: boolean = false;
+}
 /** The compute-type string is not spellable, or not runnable here. */
 export class ComputeTypeError extends ConfigurationError {
   static override readonly code: string = "ComputeTypeError";
@@ -178,7 +186,7 @@ registerErrors(
   VADError, EmptyCandidateSetError, DocumentTooLongError, CalibrationError, MissingHeadError,
   TextTooLongError, PoolingError, DimensionMismatchError, ExportError, CheckpointError,
   TaskError, YnONNXError, ProviderError, SessionError, ManifestError, GenerationError,
-  StorageError, QuotaError, IntegrityError, ComputeTypeError, UnsupportedEnvironmentError,
+  StorageError, QuotaError, IntegrityError, AssetTooLargeError, ComputeTypeError, UnsupportedEnvironmentError,
   CancelledError,
 );
 

@@ -24,12 +24,31 @@ export interface AssetStore {
 
 const CACHE_NAME = "ynonnxweb-models-v1";
 
+/** A key's path segments, refused when one could step outside its folder. */
+export function keySegments(key: string): string[] {
+  const parts = key.replace(/^\//, "").split("/");
+  for (const part of parts) {
+    if (part === "" || part === "." || part === ".." || part.includes("\\")) {
+      throw new StorageError(`'${key}' is not a usable store key (empty, dot or backslash segment)`);
+    }
+  }
+  return parts;
+}
+
+const CACHE_ORIGIN = "https://ynonnxweb.invalid/";
+
 /**
  * The Cache API needs URL-shaped keys. A synthetic origin keeps our entries from ever colliding
- * with a real request the page made — and makes them obvious in devtools.
+ * with a real request the page made — and makes them obvious in devtools. Each segment is
+ * percent-encoded: a `#` (an entry named `org--repo#embed_int4`) would otherwise start a fragment,
+ * which the Cache API ignores when matching, and a `?` a query.
  */
 function cacheKey(key: string): string {
-  return `https://ynonnxweb.invalid/${key.replace(/^\//, "")}`;
+  return `${CACHE_ORIGIN}${keySegments(key).map(encodeURIComponent).join("/")}`;
+}
+
+function keyOfCacheUrl(url: string): string {
+  return new URL(url).pathname.replace(/^\//, "").split("/").map(decodeURIComponent).join("/");
 }
 
 export class CacheApiStore implements AssetStore {
@@ -93,7 +112,7 @@ export class CacheApiStore implements AssetStore {
   async keys(): Promise<string[]> {
     const cache = await this.cache();
     const requests = await cache.keys();
-    return requests.map((request) => new URL(request.url).pathname.replace(/^\//, ""));
+    return requests.map((request) => keyOfCacheUrl(request.url));
   }
 
   async clear(): Promise<void> {
@@ -124,9 +143,8 @@ export class OpfsStore implements AssetStore {
 
   /** The directory holding a key, and the file's own name. */
   async #locate(key: string, create: boolean): Promise<{ dir: FileSystemDirectoryHandle; name: string } | null> {
-    const parts = key.split("/").filter((p) => p.length > 0 && p !== "." && p !== "..");
-    const name = parts.pop();
-    if (!name) throw new StorageError(`'${key}' is not a usable key`);
+    const parts = keySegments(key);
+    const name = parts.pop()!;
     let dir = await this.#root();
     for (const part of parts) {
       try {
@@ -239,25 +257,26 @@ export class MemoryStore implements AssetStore {
   private readonly entries = new Map<string, { buffer: ArrayBuffer; etag: string | null }>();
 
   async has(key: string): Promise<boolean> {
-    return this.entries.has(key);
+    return this.entries.has(keySegments(key).join("/"));
   }
 
   async read(key: string): Promise<ArrayBuffer | null> {
-    return this.entries.get(key)?.buffer ?? null;
+    return this.entries.get(keySegments(key).join("/"))?.buffer ?? null;
   }
 
   async stat(key: string): Promise<StoredAsset | null> {
-    const entry = this.entries.get(key);
+    const entry = this.entries.get(keySegments(key).join("/"));
     return entry ? { key, bytes: entry.buffer.byteLength, etag: entry.etag } : null;
   }
 
   async write(key: string, response: Response): Promise<void> {
+    const at = keySegments(key).join("/");
     const etag = response.headers.get("etag");
-    this.entries.set(key, { buffer: await response.arrayBuffer(), etag });
+    this.entries.set(at, { buffer: await response.arrayBuffer(), etag });
   }
 
   async delete(key: string): Promise<boolean> {
-    return this.entries.delete(key);
+    return this.entries.delete(keySegments(key).join("/"));
   }
 
   async keys(): Promise<string[]> {
@@ -294,6 +313,7 @@ export class ReadOnlyStore implements AssetStore {
   }
 
   async write(): Promise<void> {
+    // Not fatal: carry on.
   }
 
   async delete(): Promise<boolean> {
@@ -305,6 +325,7 @@ export class ReadOnlyStore implements AssetStore {
   }
 
   async clear(): Promise<void> {
+    // Not fatal: carry on.
   }
 }
 

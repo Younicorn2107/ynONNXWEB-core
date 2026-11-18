@@ -1,6 +1,8 @@
 /** Where a model's files come from. */
 
+import { ManifestError } from "../errors.js";
 import { entryName } from "./entry.js";
+import { isSize } from "./limits.js";
 import type { GraphManifest } from "../types/manifest.js";
 
 /** The manifest ynONNX writes beside a converted entry. */
@@ -47,6 +49,14 @@ export interface ModelResolver {
   /** A label for logs and errors — which source answered. */
   readonly id: string;
   /**
+   * What the bytes come from: two resolvers with the same `source` serve the same file for the same
+   * key (host, repository, revision, folder). The store records it beside each entry, and an entry
+   * stored from another source is fetched again rather than reused. `id` when absent.
+   */
+  readonly source?: string;
+  /** Sent with every request this source is asked, manifests included (a bearer token). */
+  readonly headers?: Readonly<Record<string, string>>;
+  /**
    * Where the manifest may live, most likely first; empty when this source publishes none. Several,
    * because a server cache and a published folder name it differently and both are read, as on the
    * Python side.
@@ -72,9 +82,30 @@ export function entryDirName(key: ModelKey): string {
   return entryName(key.name, key.computeType);
 }
 
+/** What `loadModel` records as an entry's source. */
+export function sourceOf(resolver: ModelResolver): string {
+  return resolver.source ?? resolver.id;
+}
+
 function joinUrl(base: string, ...parts: string[]): string {
   const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
   return [trimmed, ...parts.map((p) => p.replace(/^\//, ""))].join("/");
+}
+
+/**
+ * A path below a model's folder, made of names a manifest, a graph or a listing chose: each segment
+ * percent-encoded, and a dot segment refused — a URL parser resolves `entry/../other/model.onnx` to
+ * another model's folder (with `serverResolver`, a same-origin request carrying the page's
+ * cookies). A `/` stays a separator: a caller may ask for `tokenizer/tokenizer.json`.
+ */
+function pathOf(path: string): string {
+  const parts = path.replace(/^\//, "").split("/");
+  for (const part of parts) {
+    if (part === "" || part === "." || part === ".." || part.includes("\\")) {
+      throw new ManifestError(`'${path}' is not a usable file path (empty, dot or backslash segment)`);
+    }
+  }
+  return parts.map(encodeURIComponent).join("/");
 }
 
 export interface ServerResolverOptions {
@@ -82,9 +113,9 @@ export interface ServerResolverOptions {
   base?: string;
   headers?: Record<string, string>;
   /**
-   * The server makes the models it lacks (`{base}prepare?name=&computeType=`, answered when done):
-   * a model not in its cache is exported there, then loaded. Off by default — a plain cache answers
-   * 404.
+   * The server makes the models it lacks (`POST {base}prepare` with `{"name", "computeType"}` as
+   * JSON, answered when done): a model not in its cache is exported there, then loaded. Off by
+   * default — a plain cache answers 404.
    */
   prepare?: boolean;
 }
@@ -94,14 +125,15 @@ export function serverResolver(options: ServerResolverOptions = {}): ModelResolv
   const base = options.base ?? "/ynonnx/models/";
   return {
     id: `server:${base}`,
+    ...(options.headers ? { headers: options.headers } : {}),
     manifestUrls(key) {
       return [MANIFEST_FILE, PUBLISHED_MANIFEST_FILE].map((name) =>
-        joinUrl(base, entryDirName(key), name),
+        joinUrl(base, pathOf(entryDirName(key)), name),
       );
     },
     assetUrl(key, filename) {
       return {
-        url: joinUrl(base, entryDirName(key), filename),
+        url: joinUrl(base, pathOf(entryDirName(key)), pathOf(filename)),
         filename,
         ...(options.headers ? { headers: options.headers } : {}),
       };
@@ -109,12 +141,13 @@ export function serverResolver(options: ServerResolverOptions = {}): ModelResolv
     ...(options.prepare
       ? {
           async prepare(key: ModelKey, signal?: AbortSignal) {
-            const query = new URLSearchParams({ name: key.name, computeType: key.computeType });
             try {
-              const response = await fetch(`${joinUrl(base, "prepare")}?${query}`, {
+              const response = await fetch(joinUrl(base, "prepare"), {
+                method: "POST",
                 cache: "no-store",
+                body: JSON.stringify({ name: key.name, computeType: key.computeType }),
                 ...(signal ? { signal } : {}),
-                ...(options.headers ? { headers: options.headers } : {}),
+                headers: { ...(options.headers ?? {}), "Content-Type": "application/json" },
               });
               const answer = (await response.json().catch(() => ({}))) as { ready?: boolean; error?: string };
               return answer.ready ? { ready: true } : { ready: false, error: answer.error ?? `HTTP ${response.status}` };
@@ -172,17 +205,24 @@ export function huggingFaceResolver(options: HuggingFaceResolverOptions): ModelR
       ...(options.headers ? { headers: options.headers } : {}),
     });
     if (!response.ok) return null;
-    const items = (await response.json()) as { type?: string; path?: string; size?: number; lfs?: { size?: number } }[];
-    return items
-      .filter((item) => item.type === "file" && typeof item.path === "string")
-      .map((item) => ({
-        name: item.path!.split("/").pop()!,
-        size: item.lfs?.size ?? item.size ?? null,
-      }));
+    const items = (await response.json()) as unknown;
+    if (!Array.isArray(items)) return null;
+    return (items as { type?: unknown; path?: unknown; size?: unknown; lfs?: { size?: unknown } | null }[])
+      .filter((item) => item !== null && typeof item === "object" && item.type === "file" && typeof item.path === "string")
+      .map((item) => {
+        const size = item.lfs?.size ?? item.size;
+        return { name: (item.path as string).split("/").pop()!, size: isSize(size) ? size : null };
+      });
   }
 
   return {
     id: `huggingface:${options.repo}`,
+
+    source:
+      `huggingface:${endpoint}/${options.repo}@${revision}` +
+      (options.subfolder ? `/${options.subfolder}` : "") +
+      (options.variants ? ` ${JSON.stringify(options.variants)}` : ""),
+    ...(options.headers ? { headers: options.headers } : {}),
     manifestUrls(key) {
       if (options.manifest === false) return [];
       const folder = variantFolder(options, key.computeType);
@@ -198,7 +238,7 @@ export function huggingFaceResolver(options: HuggingFaceResolverOptions): ModelR
     },
     assetUrl(key, filename, place = "graphs") {
       const folder = variantFolder(options, key.computeType) ?? options.subfolder ?? null;
-      const path = folder !== null && place === "graphs" ? `${folder}/${filename}` : filename;
+      const path = folder !== null && place === "graphs" ? `${folder}/${pathOf(filename)}` : pathOf(filename);
       return {
         url: joinUrl(endpoint, options.repo, "resolve", revision, path),
         filename,
@@ -243,6 +283,8 @@ export function graphAlias(base: ModelResolver, stem: string): ModelResolver {
   const toReal = (name: string) => (name.startsWith("model") && !name.startsWith(stem) ? `${stem}${name.slice("model".length)}` : name);
   return {
     id: `${base.id}#${stem}`,
+    source: `${sourceOf(base)}#${stem}`,
+    ...(base.headers ? { headers: base.headers } : {}),
     manifestUrls: () => [],
     assetUrl: (key, filename, place) => ({ ...base.assetUrl(key, toReal(filename), place), filename }),
     listFiles: async (key, signal) => {

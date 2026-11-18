@@ -57,12 +57,24 @@ export interface Eviction {
 
 /**
  * Make room for `neededBytes` more (with a 10 % margin), evicting the least recently used models
- * not in `protect` and not held by a live bundle. Throws `QuotaError` when even that is not enough.
+ * not in `protect` and not held by a live bundle. Throws `QuotaError` when even that is not enough
+ * — decided BEFORE anything is deleted: the size comes from a manifest or a listing, and one
+ * declaring a terabyte must not cost the user every model they had stored on its way to failing.
  */
 export async function ensureRoom(store: AssetStore, neededBytes: number, protect: ReadonlySet<string>, logger?: Logger): Promise<Eviction[]> {
+  if (!Number.isFinite(neededBytes) || neededBytes < 0) {
+    throw new QuotaError(`${String(neededBytes)} is not a number of bytes to make room for`, { details: { neededBytes } });
+  }
   const needed = neededBytes * 1.1;
   let budget = await readStorageBudget();
   if (budget.availableBytes === null || budget.availableBytes >= needed) return [];
+  const mb = (n: number) => `${Math.round(n / 1e6)} MB`;
+  if (budget.quotaBytes !== null && needed > budget.quotaBytes) {
+    throw new QuotaError(
+      `not enough storage: this needs about ${mb(needed)}, more than the origin's whole quota of ${mb(budget.quotaBytes)}; nothing was evicted.`,
+      { details: { neededBytes: needed, availableBytes: budget.availableBytes, quotaBytes: budget.quotaBytes, evicted: [] } },
+    );
+  }
 
   const keys = await store.keys();
   const byEntry = new Map<string, string[]>();
@@ -81,6 +93,16 @@ export async function ensureRoom(store: AssetStore, neededBytes: number, protect
     })),
   );
   candidates.sort((a, b) => a.used - b.used);
+  const evictable = candidates.reduce((sum, c) => sum + c.bytes, 0);
+  if (budget.availableBytes + evictable < needed) {
+    throw new QuotaError(
+      `not enough storage: this needs about ${mb(needed)} more and the origin has ${mb(budget.availableBytes)} free of ` +
+        `${mb(budget.quotaBytes ?? 0)}; evicting every unused model would free only ${mb(evictable)}, so none was. ` +
+        `The models kept are in use (${[...held.keys()].join(", ") || "none"}); close one, or let the browser grant ` +
+        `more space (persistent storage, free disk).`,
+      { details: { neededBytes: needed, availableBytes: budget.availableBytes, quotaBytes: budget.quotaBytes, evicted: [] } },
+    );
+  }
 
   const evicted: Eviction[] = [];
   let freed = 0;
@@ -95,7 +117,6 @@ export async function ensureRoom(store: AssetStore, neededBytes: number, protect
   budget = await readStorageBudget();
   const available = budget.availableBytes ?? Infinity;
   if (available < needed) {
-    const mb = (n: number) => `${Math.round(n / 1e6)} MB`;
     throw new QuotaError(
       `not enough storage: this needs about ${mb(needed)} more and the origin has ${mb(available)} free of ` +
         `${mb(budget.quotaBytes ?? 0)}, after evicting ${evicted.length} unused model(s). The models still kept ` +

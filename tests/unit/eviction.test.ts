@@ -66,3 +66,40 @@ describe("room for the next model", () => {
     expect(await store.has("a_int8/model.onnx")).toBe(true);
   });
 });
+
+describe("sizes eviction is told", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("a model larger than the whole quota evicts nothing before refusing", async () => {
+    const store = new MemoryStore();
+    stubStorage(store);
+    await put(store, "a_int8/model.onnx", 300);
+    await put(store, "b_int8/model.onnx", 300);
+
+    await expect(ensureRoom(store, 1e12, new Set())).rejects.toMatchObject({ code: "QuotaError" });
+    expect(await store.has("a_int8/model.onnx")).toBe(true);
+    expect(await store.has("b_int8/model.onnx")).toBe(true);
+  });
+
+  it("evicts nothing when evicting every unused model would still not make room", async () => {
+    const store = new MemoryStore();
+    stubStorage(store);
+    await put(store, "a_int8/model.onnx", 200);
+    await put(store, "busy_int8/model.onnx", 700);
+    holdEntries(["busy_int8"]);
+    try {
+      await expect(ensureRoom(store, 400, new Set())).rejects.toMatchObject({ code: "QuotaError" });
+      expect(await store.has("a_int8/model.onnx")).toBe(true);
+    } finally {
+      releaseEntries(["busy_int8"]);
+    }
+  });
+
+  it.each([Number.NaN, -1, Number.POSITIVE_INFINITY])("refuses %s bytes outright", async (size) => {
+    const store = new MemoryStore();
+    stubStorage(store);
+    await put(store, "a_int8/model.onnx", 900);
+    await expect(ensureRoom(store, size, new Set())).rejects.toMatchObject({ code: "QuotaError" });
+    expect(await store.has("a_int8/model.onnx")).toBe(true);
+  });
+});

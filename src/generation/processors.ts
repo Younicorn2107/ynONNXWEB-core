@@ -19,6 +19,14 @@ export const NEG_INF = Number.NEGATIVE_INFINITY;
 
 export interface LogitsProcessor {
   process(logits: Logits, sequences: Sequences): void;
+  /**
+   * True when the processor only ever lowers logits (a ban, a penalty) and reads no more of a row
+   * than the entries it changes. A greedy step can then be decided from the few best candidates the
+   * graph computed (`greedyHead`): the best after the rule is among them unless the rule pushed
+   * them all below the next one, which the engine sees, and then reads the whole row. Absent means
+   * no: a rule of its own (Whisper's timestamps) reads the whole distribution.
+   */
+  readonly lowersOnly?: boolean;
 }
 
 /** Applies a chain of processors in declaration order. */
@@ -131,6 +139,10 @@ export class MinPWarper implements LogitsProcessor {
 /** Divide (logit > 0) or multiply (logit < 0) the tokens already seen. */
 export class RepetitionPenaltyProcessor implements LogitsProcessor {
   constructor(readonly penalty = 1.0) {}
+  /** Below 1 it raises the tokens already seen. */
+  get lowersOnly(): boolean {
+    return this.penalty >= 1;
+  }
   process(logits: Logits, sequences: Sequences): void {
     if (this.penalty === 1) return;
     for (let r = 0; r < logits.rows; r += 1) {
@@ -153,6 +165,10 @@ export class PresenceFrequencyPenaltyProcessor implements LogitsProcessor {
     readonly presence = 0,
     readonly frequency = 0,
   ) {}
+  /** A negative penalty raises the tokens already seen. */
+  get lowersOnly(): boolean {
+    return this.presence >= 0 && this.frequency >= 0;
+  }
   process(logits: Logits, sequences: Sequences): void {
     if (this.presence === 0 && this.frequency === 0) return;
     for (let r = 0; r < logits.rows; r += 1) {
@@ -169,6 +185,7 @@ export class PresenceFrequencyPenaltyProcessor implements LogitsProcessor {
 
 /** Ban any n-gram already emitted within the same sequence. */
 export class NoRepeatNGramProcessor implements LogitsProcessor {
+  readonly lowersOnly = true;
   constructor(readonly ngramSize = 0) {}
   process(logits: Logits, sequences: Sequences): void {
     const n = this.ngramSize;
@@ -196,6 +213,7 @@ export class NoRepeatNGramProcessor implements LogitsProcessor {
 
 /** Hold EOS at -inf until `minLength` tokens have been generated. */
 export class MinLengthProcessor implements LogitsProcessor {
+  readonly lowersOnly = true;
   readonly eosIds: number[];
   constructor(
     readonly minLength: number,
@@ -214,6 +232,7 @@ export class MinLengthProcessor implements LogitsProcessor {
 
 /** Hold a fixed list of ids at -inf (markers, non-textual tokens). */
 export class SuppressTokensProcessor implements LogitsProcessor {
+  readonly lowersOnly = true;
   readonly ids: number[];
   constructor(ids: readonly number[]) {
     this.ids = [...ids];
@@ -228,6 +247,7 @@ export class SuppressTokensProcessor implements LogitsProcessor {
 
 /** Ban a leading space and EOS at the very first generated position only. */
 export class SuppressBlankProcessor implements LogitsProcessor {
+  readonly lowersOnly = true;
   constructor(
     readonly spaceTokenId: number | null,
     readonly eosTokenId: number | null,
@@ -262,6 +282,7 @@ export class ForcedTokensProcessor implements LogitsProcessor {
 
 /** Ban whole token sequences, not just single ids. */
 export class BadWordsProcessor implements LogitsProcessor {
+  readonly lowersOnly = true;
   readonly words: number[][];
   constructor(words: readonly (readonly number[])[]) {
     this.words = words.filter((w) => w.length > 0).map((w) => [...w]);

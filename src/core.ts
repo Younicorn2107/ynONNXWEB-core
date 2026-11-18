@@ -37,6 +37,7 @@ export {
   StorageError,
   QuotaError,
   IntegrityError,
+  AssetTooLargeError,
   ComputeTypeError,
   UnsupportedEnvironmentError,
   CancelledError,
@@ -58,6 +59,8 @@ export {
   usesMergedDecoder,
   decoderRoles,
   totalSizeMb,
+  isSafeFileName,
+  SAFE_FILE_NAME,
 } from "./types/manifest.js";
 export type { GraphManifest, GraphEntry, GraphRole, KVGeometry } from "./types/manifest.js";
 
@@ -92,6 +95,8 @@ export {
 } from "./backends/chain.js";
 export type { Backend, BackendSpec } from "./backends/chain.js";
 
+export { DEFAULT_LIMITS, resolveLimits } from "./models/limits.js";
+export type { Limits } from "./models/limits.js";
 export { readGraphInfo, ONNX_DTYPES } from "./models/onnxProto.js";
 export type { GraphDim, GraphInfo, GraphValue } from "./models/onnxProto.js";
 export { buildManifest, kvGeometry, logitsVocabSize } from "./models/introspect.js";
@@ -153,6 +158,7 @@ export type { SentencePieceModel } from "./text/sentencepiece.js";
 export type { FastTextPrediction } from "./text/fasttext.js";
 export { LID_MODEL_URL, LanguageDetector, MIN_CONFIDENCE, MIN_SEGMENT_CHARS, PREFIX_CHARS } from "./text/language.js";
 export type { LanguageSegment } from "./text/language.js";
+
 
 export {
   EXPORTERS,

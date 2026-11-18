@@ -1,5 +1,7 @@
 /** A graph's weights moved out of it, as if it had been published with external data. */
 
+import { ManifestError } from "../errors.js";
+import { isSize } from "./limits.js";
 import { encode, parse, type Field } from "./protobuf.js";
 
 const MODEL_GRAPH = 7;
@@ -92,10 +94,13 @@ export function externalizeWeights(
 export function splitExternalData(
   model: Uint8Array,
   location: string,
+  fileBytes: number,
   partBytes = 2 ** 30,
 ): { bytes: Uint8Array; parts: { name: string; start: number; end: number }[] } {
+  if (!isSize(fileBytes)) throw new ManifestError(`${location}: listed size ${String(fileBytes)} is not a size`);
   const fields = parse(model);
   const graphAt = fields.findIndex((f) => f.num === MODEL_GRAPH);
+  if (graphAt < 0) throw new ManifestError("not an ONNX model: no graph in the protobuf");
   const graph = parse(fields[graphAt]!.data!);
   const entries = (t: readonly Field[]) =>
     new Map(
@@ -112,7 +117,12 @@ export function splitExternalData(
       const t = parse(f.data!);
       const e = entries(t);
       if (e.get("location") !== location) return null;
-      return { index, t, offset: Number(e.get("offset") ?? 0), length: Number(e.get("length") ?? 0) };
+      const offset = Number(e.get("offset") ?? 0);
+      const length = Number(e.get("length") ?? 0);
+      if (!isSize(offset) || !isSize(length) || offset + length > fileBytes) {
+        throw new ManifestError(`${location}: a tensor at offset ${e.get("offset") ?? "0"}, length ${e.get("length") ?? "0"} does not fit in the file's ${fileBytes} bytes`);
+      }
+      return { index, t, offset, length };
     })
     .filter((x): x is { index: number; t: Field[]; offset: number; length: number } => x !== null)
     .sort((a, b) => a.offset - b.offset);

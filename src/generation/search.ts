@@ -47,12 +47,18 @@ export function logSoftmax(row: Float32Array, out: Float32Array = new Float32Arr
   return out;
 }
 
+/** A row's chosen token and its log-probability. */
+export interface TokenPick {
+  token: number;
+  logprob: number;
+}
+
 /**
  * The best entry of `row` and its log-probability, without writing the whole log-softmax out:
  * greedy decoding reads one value of it, and a 50 000-word vocabulary written out at every step was
  * most of a step's JavaScript.
  */
-function bestOf(row: Float32Array): { token: number; logprob: number } {
+function bestOf(row: Float32Array): TokenPick {
   let token = 0;
   let max = NEG_INF;
   for (let i = 0; i < row.length; i += 1) {
@@ -140,9 +146,19 @@ export class GreedySearch implements SearchStrategy {
   }
 
   step(logits: Logits): StepDecision {
+    const picks: TokenPick[] = [];
+    for (let r = 0; r < logits.rows; r += 1) picks.push(bestOf(rowOf(logits, r)));
+    return this.choose(picks);
+  }
+
+  /**
+   * The step, from each row's best token and its log-probability already found — by the graph
+   * (`greedyHead`), when the vocabulary never came back.
+   */
+  choose(picks: readonly TokenPick[]): StepDecision {
     const tokens: number[] = [];
-    for (let r = 0; r < logits.rows; r += 1) {
-      const best = bestOf(rowOf(logits, r));
+    for (let r = 0; r < picks.length; r += 1) {
+      const best = picks[r]!;
       let token = best.token;
       if (this.#finished[r]) {
         token = this.padId;

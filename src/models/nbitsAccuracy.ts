@@ -1,6 +1,6 @@
 /** `MatMulNBits` told it may compute in int8 on the CPU. */
 
-import { encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
+import { deeper, encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
 
 const MODEL_GRAPH = 7;
 const GRAPH_NODE = 1;
@@ -15,7 +15,7 @@ const ATTR_TYPE_INT = 2;
 
 export const CPU_NBITS_ACCURACY = 4;
 
-function rewriteGraph(graph: Uint8Array, level: number, count: { n: number }): Uint8Array {
+function rewriteGraph(graph: Uint8Array, level: number, count: { n: number }, depth = 0): Uint8Array {
   const out = parse(graph).map((f): Field => {
     if (f.num !== GRAPH_NODE) return f;
     const node = parse(f.data!);
@@ -26,7 +26,7 @@ function rewriteGraph(graph: Uint8Array, level: number, count: { n: number }): U
       const attr = parse(a.data!);
       if (!attr.some((x) => (x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data)) return a;
       changed = true;
-      return { ...a, data: encode(attr.map((x) => ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data ? { ...x, data: rewriteGraph(x.data, level, count) } : x))) };
+      return { ...a, data: encode(attr.map((x) => ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data ? { ...x, data: rewriteGraph(x.data, level, count, deeper(depth)) } : x))) };
     });
     if (str(node.find((x) => x.num === NODE_OP_TYPE)) === "MatMulNBits") {
       const has = node.some((a) => a.num === NODE_ATTRIBUTE && str(parse(a.data!).find((x) => x.num === ATTR_NAME)) === "accuracy_level");

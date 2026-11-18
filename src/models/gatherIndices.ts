@@ -1,6 +1,6 @@
 /** `Gather` indices computed on the GPU, cast to int32 for WebGPU. */
 
-import { encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
+import { deeper, encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
 
 const MODEL_GRAPH = 7;
 const GRAPH_NODE = 1;
@@ -46,7 +46,7 @@ function castNode(input: string, output: string): Field {
   };
 }
 
-function rewriteGraph(graphBytes: Uint8Array, outerFed: ReadonlySet<string>, counter: { casts: number }): Uint8Array {
+function rewriteGraph(graphBytes: Uint8Array, outerFed: ReadonlySet<string>, counter: { casts: number }, depth = 0): Uint8Array {
   const fields = parse(graphBytes);
 
   const fed = new Set(outerFed);
@@ -70,8 +70,8 @@ function rewriteGraph(graphBytes: Uint8Array, outerFed: ReadonlySet<string>, cou
       if (!attr.some((a) => a.num === ATTR_G || a.num === ATTR_GRAPHS)) continue;
       let attrChanged = false;
       for (const [k, a] of attr.entries()) {
-        if (a.num !== ATTR_G && a.num !== ATTR_GRAPHS) continue;
-        const rewritten = rewriteGraph(a.data!, fed, counter);
+        if ((a.num !== ATTR_G && a.num !== ATTR_GRAPHS) || !a.data) continue;
+        const rewritten = rewriteGraph(a.data, fed, counter, deeper(depth));
         if (rewritten !== a.data) {
           attr[k] = { ...a, data: rewritten };
           attrChanged = true;

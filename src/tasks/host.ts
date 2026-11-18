@@ -1,7 +1,27 @@
 /** The side that runs tasks: a registry, and a loop serving it on a transport. */
 
 import { CancelledError, TaskError, serializeError } from "../errors.js";
-import type { TaskHandler, Transport } from "./protocol.js";
+import { readMessage, type TaskHandler, type Transport } from "./protocol.js";
+import { DEFAULT_LIMITS, checkRemoteLocations, type LocationPolicy, type Trust } from "./trust.js";
+
+export interface ServeOptions extends LocationPolicy {
+  /**
+   * How far the peer is trusted; by default what the transport says (a port: `local`, a socket:
+   * `remote`). A `remote` peer's payloads may not name where code or models load from —
+   * `wasmPaths`, `endpoint`, `resolverBase`, `hub`… — unless `allowedOrigins` / `allowedRepos` list
+   * it: the page fixes those when it registers its handlers.
+   */
+  trust?: Trust;
+  /**
+   * Calls running at once on this transport; more are refused. Default 4 for a remote peer, 64 for
+   * a local one.
+   */
+  maxConcurrentCalls?: number;
+  /** The largest message a decoding transport accepts. Default 16 MiB. */
+  maxMessageBytes?: number;
+  /** The deepest nesting a message may have. Default 32. */
+  maxDepth?: number;
+}
 
 export class TaskHost {
   readonly #tasks = new Map<string, TaskHandler>();
@@ -17,34 +37,66 @@ export class TaskHost {
   }
 
   /** Serve on a transport until it closes; returns the function that stops. */
-  serve(transport: Transport): () => void {
+  serve(transport: Transport, options: ServeOptions = {}): () => void {
+    const trust: Trust = options.trust ?? transport.peer ?? "local";
+    const maxCalls = options.maxConcurrentCalls ?? (trust === "remote" ? 4 : 64);
+    const maxDepth = options.maxDepth ?? DEFAULT_LIMITS.maxDepth;
+    const policy: LocationPolicy = { ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}), ...(options.allowedRepos ? { allowedRepos: options.allowedRepos } : {}) };
     const running = new Map<number, AbortController>();
-    const stop = transport.listen((message) => {
-      if (message.kind === "describe") {
-        transport.send({ kind: "hello", tasks: this.tasks });
-        return;
-      }
-      if (message.kind === "cancel") {
-        running.get(message.id)?.abort(new CancelledError("cancelled by the caller"));
-        return;
-      }
-      if (message.kind === "call") void this.#run(transport, running, message.id, message.task, message.payload);
-    });
-    transport.send({ kind: "hello", tasks: this.tasks });
-    return () => {
+    const fail = (id: number, error: unknown) => transport.send({ kind: "error", id, error: serializeError(error) });
+
+    const stopListening = transport.listen(
+      (raw) => {
+        const read = readMessage(raw);
+        if ("error" in read) {
+          if (read.id !== null && !running.has(read.id)) fail(read.id, read.error);
+          return;
+        }
+        const message = read.message;
+
+        if (message.kind === "describe") {
+          transport.send({ kind: "hello", tasks: this.tasks });
+          return;
+        }
+        if (message.kind === "cancel") {
+          running.get(message.id)?.abort(new CancelledError("cancelled by the caller"));
+          return;
+        }
+        if (message.kind !== "call") return;
+
+        if (running.has(message.id)) return void fail(message.id, new TaskError(`call ${message.id} is already running`));
+        if (running.size >= maxCalls) {
+          return void fail(message.id, new TaskError(`too many calls at once (${maxCalls}): wait for one to finish`, { details: { maxConcurrentCalls: maxCalls } }));
+        }
+        if (trust === "remote") {
+          try {
+            checkRemoteLocations(message.payload, policy, maxDepth);
+          } catch (error) {
+            return void fail(message.id, error);
+          }
+        }
+        void this.#run(transport, running, trust, message.id, message.task, message.payload);
+      },
+      {
+        limits: { maxDepth, ...(options.maxMessageBytes !== undefined ? { maxMessageBytes: options.maxMessageBytes } : {}) },
+        onInvalid: (error, id) => {
+          if (id !== null && !running.has(id)) fail(id, error);
+        },
+      },
+    );
+    const stop = () => {
       for (const controller of running.values()) controller.abort(new CancelledError("the host stopped serving"));
       running.clear();
-      stop();
+      stopListening();
+      stopClose?.();
     };
+
+    const stopClose = transport.onClose?.(() => stop());
+    transport.send({ kind: "hello", tasks: this.tasks });
+    return stop;
   }
 
-  async #run(
-    transport: Transport,
-    running: Map<number, AbortController>,
-    id: number,
-    task: string,
-    payload: unknown,
-  ): Promise<void> {
+  async #run(transport: Transport, running: Map<number, AbortController>, trust: Trust, id: number, task: string, payload: unknown): Promise<void> {
     const handler = this.#tasks.get(task);
     if (!handler) {
       transport.send({
@@ -56,13 +108,19 @@ export class TaskHost {
     }
     const controller = new AbortController();
     running.set(id, controller);
+    const transfer = new Set<ArrayBuffer>();
     try {
       const result = await handler(payload, {
         progress: (value) => transport.send({ kind: "progress", id, payload: value }),
         emit: (chunk) => transport.send({ kind: "chunk", id, payload: chunk }),
+        transfer: (...buffers) => {
+          for (const buffer of buffers) transfer.add(buffer);
+        },
         signal: controller.signal,
+        trust,
       });
-      transport.send({ kind: "result", id, result }, transferablesOf(result));
+
+      transport.send({ kind: "result", id, result }, [...transfer]);
     } catch (error) {
       const cause = controller.signal.aborted && !(error instanceof Error) ? controller.signal.reason : error;
       transport.send({ kind: "error", id, error: serializeError(cause) });
@@ -70,19 +128,4 @@ export class TaskHost {
       running.delete(id);
     }
   }
-}
-
-/** The buffers of a result's typed arrays, handed over rather than copied. */
-export function transferablesOf(value: unknown, found: Set<ArrayBuffer> = new Set(), depth = 0): Transferable[] {
-  if (depth > 6 || value === null || typeof value !== "object") return [...found];
-  if (ArrayBuffer.isView(value)) {
-    if (value.buffer instanceof ArrayBuffer && value.byteLength === value.buffer.byteLength) found.add(value.buffer);
-  } else if (value instanceof ArrayBuffer) {
-    found.add(value);
-  } else if (Array.isArray(value)) {
-    for (const item of value.slice(0, 64)) transferablesOf(item, found, depth + 1);
-  } else {
-    for (const item of Object.values(value)) transferablesOf(item, found, depth + 1);
-  }
-  return [...found];
 }

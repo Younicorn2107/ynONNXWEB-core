@@ -1,7 +1,7 @@
 {
   "name": "@youni/onnxweb-core",
   "version": "1.0.0",
-  "description": "Run ONNX models in the browser — NPU, GPU or CPU — with the model catalogue and manifest format of the ynONNX pack.",
+  "description": "Run ONNX models in the browser \u2014 NPU, GPU or CPU \u2014 with the model catalogue and manifest format of the ynONNX pack.",
   "license": "Apache-2.0",
   "author": "Youni",
   "type": "module",
@@ -41,7 +41,7 @@
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
   },
   "peerDependencies": {
-    "onnxruntime-web": ">=1.20.0"
+    "onnxruntime-web": ">=1.20.0 <2"
   },
   "peerDependenciesMeta": {
     "onnxruntime-web": {

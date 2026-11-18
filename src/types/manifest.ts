@@ -101,6 +101,8 @@ export function detectRole(
   return "single";
 }
 
+const SHA256_HEX = /^[0-9a-f]{64}$/i;
+
 function asRole(value: unknown, where: string): GraphRole {
   if (typeof value === "string" && (ROLES as readonly string[]).includes(value)) {
     return value as GraphRole;
@@ -108,6 +110,44 @@ function asRole(value: unknown, where: string): GraphRole {
   throw new ManifestError(
     `${where}: '${String(value)}' is not a graph role (expected one of ${ROLES.join(", ")})`,
   );
+}
+
+/**
+ * What a file named by a manifest (or by a graph, or a listing) may be called: one plain name, no
+ * separator, no leading dot. It becomes a store key (`<entry>/<name>`) and the last segment of a
+ * URL, so `../other_int8/model.onnx` would otherwise overwrite another model's stored graph, or
+ * leave the entry's folder on the server.
+ */
+export const SAFE_FILE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Names the loader keeps beside an entry's files: its own records. A manifest naming one of them
+ * would overwrite the record with a download.
+ */
+export const RESERVED_FILE_NAMES: ReadonlySet<string> = new Set([
+  "described_manifest.json",
+  "stored_digests.json",
+  "source.json",
+]);
+
+/** Whether `name` may be stored and fetched as a file of an entry. */
+export function isSafeFileName(name: unknown): name is string {
+  return typeof name === "string" && name.length <= 255 && SAFE_FILE_NAME.test(name) && !RESERVED_FILE_NAMES.has(name);
+}
+
+/** `name`, refused (`ManifestError`) unless it is a plain file name. */
+export function checkFileName(name: unknown, where: string): string {
+  if (!isSafeFileName(name)) {
+    throw new ManifestError(`${where}: '${String(name).slice(0, 80)}' is not a plain file name (letters, digits, ".", "_", "-"; no separator, no leading dot)`);
+  }
+  return name;
+}
+
+/** A count the manifest gives (layers, heads, vocabulary): a non-negative integer of sane size. */
+function asCount(value: unknown, where: string): number {
+  if (typeof value !== "number") return 0;
+  if (!Number.isSafeInteger(value) || value < 0 || value > 2 ** 31) throw new ManifestError(`${where}: ${value} is not a usable count`);
+  return value;
 }
 
 function asString(value: unknown, fallback: string): string {
@@ -144,16 +184,25 @@ export function parseManifest(payload: unknown): GraphManifest {
     if (typeof filename !== "string" || filename.length === 0) {
       throw new ManifestError(`manifest '${modelKey}': graph ${index} has no filename`);
     }
+    const where = `manifest '${modelKey}', graph '${filename}'`;
+    checkFileName(filename, `manifest '${modelKey}', graph ${index}`);
     const sha = entry["sha256"];
+    if (sha !== null && sha !== undefined && (typeof sha !== "string" || !SHA256_HEX.test(sha))) {
+      throw new ManifestError(`${where}: sha256 is not 64 hexadecimal digits`);
+    }
     const size = entry["size_mb"];
+
+    if (size !== undefined && size !== null && (typeof size !== "number" || !Number.isFinite(size) || size < 0)) {
+      throw new ManifestError(`${where}: size_mb ${String(size)} is not a size`);
+    }
     return {
       filename,
-      role: asRole(entry["role"] ?? "single", `manifest '${modelKey}', graph '${filename}'`),
-      sha256: typeof sha === "string" ? sha : null,
+      role: asRole(entry["role"] ?? "single", where),
+      sha256: typeof sha === "string" ? sha.toLowerCase() : null,
       sizeMb: typeof size === "number" ? size : 0,
       inputs: asStringArray(entry["inputs"]),
       outputs: asStringArray(entry["outputs"]),
-      externalData: asStringArray(entry["external_data"]),
+      externalData: asStringArray(entry["external_data"]).map((name) => checkFileName(name, `${where}, external_data`)),
     };
   });
 
@@ -162,9 +211,9 @@ export function parseManifest(payload: unknown): GraphManifest {
   if (kvRaw !== null && typeof kvRaw === "object" && !Array.isArray(kvRaw)) {
     const k = kvRaw as Record<string, unknown>;
     kv = {
-      numLayers: typeof k["num_layers"] === "number" ? k["num_layers"] : 0,
-      numHeads: typeof k["num_heads"] === "number" ? k["num_heads"] : 0,
-      headDim: typeof k["head_dim"] === "number" ? k["head_dim"] : 0,
+      numLayers: asCount(k["num_layers"], `manifest '${modelKey}', kv.num_layers`),
+      numHeads: asCount(k["num_heads"], `manifest '${modelKey}', kv.num_heads`),
+      headDim: asCount(k["head_dim"], `manifest '${modelKey}', kv.head_dim`),
       hasCrossAttention: k["has_cross_attention"] === true,
       dtype: asString(k["dtype"], "float32"),
     };
@@ -175,6 +224,12 @@ export function parseManifest(payload: unknown): GraphManifest {
   const tokenizer = raw["tokenizer_file"];
   const extra = raw["extra"];
   const version = raw["version"];
+  if (typeof tokenizer === "string") checkFileName(tokenizer, `manifest '${modelKey}', tokenizer_file`);
+  const extras = extra !== null && typeof extra === "object" && !Array.isArray(extra) ? (extra as Record<string, unknown>) : {};
+  const rootFiles = extras["root_files"];
+  if (rootFiles !== undefined && (!Array.isArray(rootFiles) || rootFiles.some((name) => !isSafeFileName(name)))) {
+    throw new ManifestError(`manifest '${modelKey}': extra.root_files must list plain file names`);
+  }
 
   return {
     modelKey,
@@ -182,12 +237,10 @@ export function parseManifest(payload: unknown): GraphManifest {
     architecture: typeof architecture === "string" ? architecture : null,
     graphs,
     tokenizerFile: typeof tokenizer === "string" ? tokenizer : null,
-    logitsVocabSize: typeof vocab === "number" ? vocab : null,
+    logitsVocabSize: typeof vocab === "number" ? asCount(vocab, `manifest '${modelKey}', logits_vocab_size`) : null,
     kv,
     exposesCrossQk: raw["exposes_cross_qk"] === true,
-    extra: extra !== null && typeof extra === "object" && !Array.isArray(extra)
-      ? (extra as Record<string, unknown>)
-      : {},
+    extra: extras,
     version: typeof version === "number" ? version : 1,
   };
 }

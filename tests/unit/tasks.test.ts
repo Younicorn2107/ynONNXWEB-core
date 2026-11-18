@@ -83,8 +83,9 @@ describe("the WebSocket wire", () => {
   });
 
   it("carries a whole call over a socket-shaped channel", async () => {
+    
     const make = () => {
-      const listeners = new Set<(e: { data: unknown }) => void>();
+      const listeners = new Set<(e: { data?: unknown }) => void>();
       return {
         peer: null as null | { deliver(data: string): void },
         deliver(data: string) {
@@ -93,11 +94,11 @@ describe("the WebSocket wire", () => {
         send(data: string) {
           queueMicrotask(() => this.peer!.deliver(data));
         },
-        addEventListener(_: "message", l: (e: { data: unknown }) => void) {
-          listeners.add(l);
+        addEventListener(type: string, l: (e: { data?: unknown }) => void) {
+          if (type === "message") listeners.add(l);
         },
-        removeEventListener(_: "message", l: (e: { data: unknown }) => void) {
-          listeners.delete(l);
+        removeEventListener(type: string, l: (e: { data?: unknown }) => void) {
+          if (type === "message") listeners.delete(l);
         },
       };
     };
@@ -107,8 +108,9 @@ describe("the WebSocket wire", () => {
     page.peer = server;
 
     const host = new TaskHost().register("embed", async (texts: string[]) => new Float32Array(texts.map((t) => t.length)));
-    host.serve(webSocketTransport(page));
-    const client = new TaskClient(webSocketTransport(server));
+    
+    host.serve(webSocketTransport(page, { insecure: true }));
+    const client = new TaskClient(webSocketTransport(server, { insecure: true }));
     const result = await client.call<Float32Array>("embed", ["ab", "abcd"]);
     expect(result).toEqual(new Float32Array([2, 4]));
   });

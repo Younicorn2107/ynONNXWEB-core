@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as ort from "onnxruntime-web";
 import { describe, expect, it } from "vitest";
 
+import { ManifestError } from "../../src/errors.js";
 import { externalizeWeights, splitExternalData } from "../../src/models/externalize.js";
 
 const MODELS = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "models");
@@ -38,9 +39,17 @@ describe("weights moved out of the graph", () => {
     const one = externalizeWeights(model, "m.weights", { minTotal: 0 })!;
     expect(one.files.length).toBe(1);
     const file = one.files[0]!;
-    const split = splitExternalData(one.bytes, file.path, 4096);
+    const split = splitExternalData(one.bytes, file.path, file.data.length, 4096);
     expect(split.parts.length).toBeGreaterThan(1);
     const parts = split.parts.map((p) => ({ path: p.name, data: file.data.slice(p.start, p.end) }));
     expect(Array.from(await run(split.bytes, parts))).toEqual(Array.from(await run(model)));
+  });
+
+  it("refuses a tensor the graph places outside the file its source lists", () => {
+    const one = externalizeWeights(model, "m.weights", { minTotal: 0 })!;
+    const file = one.files[0]!;
+
+    expect(() => splitExternalData(one.bytes, file.path, file.data.length - 1, 4096)).toThrow(ManifestError);
+    expect(() => splitExternalData(one.bytes, file.path, Number.NaN, 4096)).toThrow(ManifestError);
   });
 });

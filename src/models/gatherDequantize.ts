@@ -1,6 +1,6 @@
 /** A quantized embedding table read row by row, not dequantized whole. */
 
-import { encode, operatorTypes, parse, str, type Field } from "./protobuf.js";
+import { deeper, elementCount, encode, operatorTypes, parse, repeatedInts, str, type Field } from "./protobuf.js";
 
 const MODEL_OPSET = 8;
 const MODEL_GRAPH = 7;
@@ -74,32 +74,14 @@ function intsAttribute(n: readonly Field[], name: string): number[] | undefined 
     if (a.num !== NODE_ATTRIBUTE) continue;
     const attr = parse(a.data!);
     if (str(attr.find((x) => x.num === ATTR_NAME)) !== name) continue;
-    return attr.filter((x) => x.num === ATTR_INTS).flatMap((x) => (x.int !== undefined ? [Number(BigInt.asIntN(64, x.int))] : x.data ? packedInts(x.data) : []));
+    return repeatedInts(attr, ATTR_INTS);
   }
   return undefined;
 }
 
-/** Varints packed in one length-delimited field. */
-function packedInts(data: Uint8Array): number[] {
-  const out: number[] = [];
-  let at = 0;
-  while (at < data.length) {
-    let value = 0n;
-    let shift = 0n;
-    for (;;) {
-      const byte = data[at++]!;
-      value |= BigInt(byte & 0x7f) << shift;
-      if (byte < 0x80) break;
-      shift += 7n;
-    }
-    out.push(Number(BigInt.asIntN(64, value)));
-  }
-  return out;
-}
-
 /** A TensorProto's dims, packed or not. */
 function dimsOf(t: readonly Field[]): number[] {
-  return t.filter((x) => x.num === TENSOR_DIMS).flatMap((x) => (x.int !== undefined ? [Number(x.int)] : x.data ? packedInts(x.data) : []));
+  return repeatedInts(t, TENSOR_DIMS);
 }
 
 function intAttribute(n: readonly Field[], name: string): number | undefined {
@@ -123,13 +105,13 @@ interface Table {
 }
 
 /** Calls `visit` on every node list: the graph's, then every subgraph's, depth first. */
-function forEachNodeList(graph: Field[], visit: (nodes: Field[][]) => void): void {
+function forEachNodeList(graph: Field[], visit: (nodes: Field[][]) => void, depth = 0): void {
   const nodes = graph.filter((f) => f.num === GRAPH_NODE).map((f) => parse(f.data!));
   visit(nodes);
   for (const n of nodes) {
     for (const a of n) {
       if (a.num !== NODE_ATTRIBUTE) continue;
-      for (const x of parse(a.data!)) if ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data) forEachNodeList(parse(x.data), visit);
+      for (const x of parse(a.data!)) if ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data) forEachNodeList(parse(x.data), visit, deeper(depth));
     }
   }
 }
@@ -138,7 +120,7 @@ function forEachNodeList(graph: Field[], visit: (nodes: Field[][]) => void): voi
  * The graph with each matching `Gather` rebuilt: `replace` maps a Gather's fields to the nodes
  * standing for it, or null to keep it. Subgraphs too.
  */
-function rewriteGraph(graph: Field[], replace: (n: Field[]) => Field[] | null, drop: ReadonlySet<string>): Field[] {
+function rewriteGraph(graph: Field[], replace: (n: Field[]) => Field[] | null, drop: ReadonlySet<string>, depth = 0): Field[] {
   const out: Field[] = [];
   for (const f of graph) {
     if (f.num !== GRAPH_NODE) {
@@ -159,7 +141,7 @@ function rewriteGraph(graph: Field[], replace: (n: Field[]) => Field[] | null, d
       const attr = parse(a.data!);
       if (!attr.some((x) => (x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data)) return a;
       changed = true;
-      const rebuilt = attr.map((x) => ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data ? { ...x, data: encode(rewriteGraph(parse(x.data), replace, drop)) } : x));
+      const rebuilt = attr.map((x) => ((x.num === ATTR_G || x.num === ATTR_GRAPHS) && x.data ? { ...x, data: encode(rewriteGraph(parse(x.data), replace, drop, deeper(depth))) } : x));
       return { ...a, data: encode(rebuilt) };
     });
     out.push(changed ? { ...f, data: encode(fields) } : f);
@@ -214,7 +196,13 @@ export function gatherBeforeDequantize(model: Uint8Array): { bytes: Uint8Array; 
         const gather = op === "Gather" && at === 0 && (intAttribute(n, "axis") ?? 0) === 0;
         const w = initializers.get(table.weights)!;
         const perm = intsAttribute(n, "perm");
-        const transpose = op === "Transpose" && (!perm || (perm.length === 2 && perm[0] === 1 && perm[1] === 0)) && w.raw !== null && (w.dataType === INT8 || w.dataType === UINT8);
+
+        const transpose =
+          op === "Transpose" &&
+          (!perm || (perm.length === 2 && perm[0] === 1 && perm[1] === 0)) &&
+          w.raw !== null &&
+          (w.dataType === INT8 || w.dataType === UINT8) &&
+          elementCount(w.dims) === w.raw.length;
         if (!gather && !transpose) tables.delete(input);
       });
     }

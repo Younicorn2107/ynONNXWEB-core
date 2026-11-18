@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { ManifestError } from "../../src/errors.js";
 import { entryName, safeName, splitEntry } from "../../src/models/entry.js";
-import { huggingFaceResolver, manifestFileFor } from "../../src/models/resolve.js";
+import { huggingFaceResolver, manifestFileFor, serverResolver } from "../../src/models/resolve.js";
 import {
   MANIFEST_VERSION_WITH_EXTERNAL_DATA,
   decoderRoles,
@@ -313,5 +313,83 @@ describe("the flat repository layout", () => {
   it("still supports a third-party repo that publishes no manifest", () => {
     const resolver = huggingFaceResolver({ repo: "someone/else", manifest: false });
     expect(resolver.manifestUrls({ name: "x", computeType: "int4" })).toEqual([]);
+  });
+});
+
+describe("file names a manifest gives", () => {
+  /** A manifest with one graph and these fields changed. */
+  const withGraph = (graph: Record<string, unknown>, top: Record<string, unknown> = {}) =>
+    parseManifest({ model_key: "a_int8", graphs: [{ filename: "model.onnx", role: "single", ...graph }], ...top });
+
+  const HOSTILE = [
+    "../b_int8/model.onnx",
+    "..",
+    ".",
+    "sub/model.onnx",
+    "sub\\model.onnx",
+    "/etc/passwd",
+    ".hidden",
+    "model.onnx?x=1",
+    "model.onnx#frag",
+    "%2e%2e",
+    "",
+    "stored_digests.json",
+    "source.json",
+    "described_manifest.json",
+  ];
+
+  it.each(HOSTILE)("refuses %j as a graph filename", (name) => {
+    expect(() => withGraph({ filename: name })).toThrow(ManifestError);
+  });
+
+  it.each(HOSTILE)("refuses %j as external data, tokenizer file and root file", (name) => {
+    expect(() => withGraph({ external_data: [name] })).toThrow(ManifestError);
+    if (name !== "") expect(() => withGraph({}, { tokenizer_file: name })).toThrow(ManifestError);
+    expect(() => withGraph({}, { extra: { root_files: [name] } })).toThrow(ManifestError);
+  });
+
+  it("accepts the names exports actually use", () => {
+    const m = withGraph(
+      { filename: "decoder_model_merged-int4.onnx", external_data: ["decoder_model_merged-int4.onnx_data", "model.onnx.data_1"] },
+      { tokenizer_file: "tokenizer.json", extra: { root_files: ["config.json"] } },
+    );
+    expect(m.graphs[0]!.externalData).toHaveLength(2);
+  });
+
+  it("refuses sizes that are not sizes and digests that are not SHA-256", () => {
+    for (const size of [Number.NaN, -1, Number.POSITIVE_INFINITY, "12"]) expect(() => withGraph({ size_mb: size })).toThrow(ManifestError);
+    expect(() => withGraph({ sha256: "abc" })).toThrow(ManifestError);
+    expect(withGraph({ sha256: "A".repeat(64) }).graphs[0]!.sha256).toBe("a".repeat(64));
+  });
+
+  it("refuses KV geometry that cannot be a count", () => {
+    expect(() => withGraph({}, { kv: { num_layers: 1e12, num_heads: 1, head_dim: 1 } })).toThrow(ManifestError);
+    expect(() => withGraph({}, { logits_vocab_size: -5 })).toThrow(ManifestError);
+  });
+});
+
+describe("URLs built from file names", () => {
+  it("encode each segment and refuse dot segments, for the server and the Hub", () => {
+    const key = { name: "a", computeType: "int8" };
+    const server = serverResolver({ base: "https://s.test/models/" });
+    const hub = huggingFaceResolver({ repo: "org/repo", subfolder: "onnx", endpoint: "https://hub.test" });
+    for (const resolver of [server, hub]) {
+      expect(() => resolver.assetUrl(key, "../b_int8/model.onnx")).toThrow(ManifestError);
+      expect(() => resolver.assetUrl(key, "a/./b")).toThrow(ManifestError);
+      expect(resolver.assetUrl(key, "model.onnx?x#y").url).toMatch(/model\.onnx%3Fx%23y$/);
+    }
+    expect(server.assetUrl(key, "model.onnx").url).toBe("https://s.test/models/a_int8/model.onnx");
+
+    expect(hub.assetUrl(key, "text_encoder/tokenizer.json", "root").url).toBe("https://hub.test/org/repo/resolve/main/text_encoder/tokenizer.json");
+
+    expect(() => server.assetUrl({ name: "a", computeType: "x/../../b" }, "model.onnx")).toThrow(ManifestError);
+  });
+
+  it("name where the bytes come from: host, repository, revision and folder", () => {
+    const a = huggingFaceResolver({ repo: "org/repo", subfolder: "onnx" });
+    const b = huggingFaceResolver({ repo: "org/repo", subfolder: "onnx", endpoint: "https://mirror.test" });
+    const c = huggingFaceResolver({ repo: "org/repo", subfolder: "onnx", revision: "0123abc" });
+    expect(new Set([a.source, b.source, c.source]).size).toBe(3);
+    expect(a.id).toBe(b.id);
   });
 });

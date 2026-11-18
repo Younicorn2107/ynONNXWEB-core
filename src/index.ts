@@ -2,6 +2,7 @@
 
 export * from "./core.js";
 
+
 export {
   detectCapabilities,
   resetCapabilities,
@@ -32,6 +33,7 @@ export {
   wasmRuntime,
 } from "./backends/memory.js";
 export type { StorageBudget, FitVerdict, WasmRuntime } from "./backends/memory.js";
+
 
 export {
   MANIFEST_FILE,
@@ -67,6 +69,7 @@ export {
 } from "./models/fetch.js";
 export type { FetchProgress, FetchOptions } from "./models/fetch.js";
 
+
 export { buildSession, readSpecs } from "./session/create.js";
 export type { SessionConfig, TensorSpec, BuiltSession, OrtLike } from "./session/create.js";
 
@@ -76,9 +79,11 @@ export type { ModelSession, BundleOptions } from "./session/bundle.js";
 export { loadModel, createSession } from "./session/load.js";
 export type { LoadOptions, PerRole } from "./session/load.js";
 
-export { TaskHost, transferablesOf } from "./tasks/host.js";
+
+export { TaskHost } from "./tasks/host.js";
+export type { ServeOptions } from "./tasks/host.js";
 export { TaskClient } from "./tasks/client.js";
-export type { CallOptions } from "./tasks/client.js";
+export type { CallOptions, TaskClientOptions } from "./tasks/client.js";
 export {
   decodeWire,
   encodeWire,
@@ -86,9 +91,13 @@ export {
   transportPair,
   webSocketTransport,
 } from "./tasks/transports.js";
-export type { TaskContext, TaskHandler, TaskMessage, Transport } from "./tasks/protocol.js";
+export type { WebSocketTransportOptions } from "./tasks/transports.js";
+export { readMessage } from "./tasks/protocol.js";
+export type { ListenOptions, TaskContext, TaskHandler, TaskMessage, Transport } from "./tasks/protocol.js";
+export { DEFAULT_LIMITS, LOCATION_KEYS, allowedLocations, checkRemoteLocations, pinnedLocations } from "./tasks/trust.js";
+export type { LocationPolicy, Trust, WireLimits } from "./tasks/trust.js";
 export { camelCase, fromPythonNames, snakeCase, toPythonNames } from "./tasks/wire.js";
 
-export { WorkerClient, createWorker } from "./worker/client.js";
-export type { WorkerClientOptions } from "./worker/client.js";
+export { WorkerClient, createWorker, matchesIntegrity } from "./worker/client.js";
+export type { CreateWorkerOptions, WorkerClientOptions } from "./worker/client.js";
 export { registerTask, registeredTasks, serve, workerHost } from "./worker/host.js";
